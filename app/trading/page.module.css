@@ -1,0 +1,317 @@
+.container {
+    padding: 2rem;
+    color: var(--text-primary);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.loadingWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    color: var(--accent);
+}
+
+.emptyState {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-color);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.emptyIcon {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+.emptyState h2 {
+    font-size: 1.25rem;
+    color: var(--white);
+    margin-bottom: 0.75rem;
+}
+
+.emptyState p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.accountsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.accountCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cardHeader {
+    padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btnIcon, .btnIconDelete {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.btnIcon:hover { color: var(--accent); }
+.btnIconDelete:hover { color: var(--danger); }
+
+.accountName {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.accountType {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    display: inline-block;
+    align-self: flex-start;
+}
+
+.accountType.real {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--success);
+}
+.accountType.demo {
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--text-secondary);
+}
+.accountType.fundeo {
+    background: rgba(212, 175, 55, 0.2);
+    color: var(--accent);
+}
+
+.operationsBadge {
+    padding: 0 1.5rem 1rem 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cardBody {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.blockTitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+}
+
+.dataRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.value {
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.positiveText { color: var(--success); }
+.negativeText { color: var(--danger); }
+.highlightValue { color: var(--white); font-weight: 800; }
+.riskText { color: #1D9E75; }
+
+.cardFooter {
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary);
+}
+
+.btnEnter {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--bg-primary);
+    border: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btnEnter:hover {
+    background: var(--accent-dark);
+}
+
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--accent);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+    background: var(--accent-dark);
+}
+
+.btnPrimary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btnCancel {
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnCancel:hover {
+    background: var(--bg-tertiary);
+    color: var(--white);
+}
+
+.modalOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modalTitle {
+    font-size: 1.25rem;
+    color: var(--white);
+    margin-bottom: 1.5rem;
+}
+
+.formGroup {
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.formRow {
+    display: flex;
+    gap: 1rem;
+}
+
+.formGroup label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.formGroup input, .formGroup select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--white);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.formGroup input:focus, .formGroup select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}

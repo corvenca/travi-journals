@@ -1,0 +1,381 @@
+.dashboardContainer {
+    padding: 2rem;
+    color: var(--text-primary);
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* Fila 1: Stats */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .statsGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.statCard {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.statCard h3 {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.statHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.statValue {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.2;
+}
+
+.statSub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+
+/* Fila 2: Equity Curve */
+.equityCard {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+}
+
+.chartHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chartHeader h3 {
+    font-size: 1.1rem;
+    color: var(--white);
+}
+
+.chartFilters {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filterBtn {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.filterBtn.active, .filterBtn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.chartContainer {
+    flex: 1;
+    width: 100%;
+}
+
+/* Fila 3: Consistence & Top Setups */
+.rowThreeGrid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 1.5rem;
+}
+
+.splitCard {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.splitCard h3 {
+    font-size: 1.1rem;
+    color: var(--white);
+    margin-bottom: 1rem;
+}
+
+.consistencyHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.consistencyIconBase {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--accent);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+}
+
+.consistencyGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.consRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, var(--bg-primary), rgba(30, 41, 59, 0.5));
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.consRow:hover {
+    transform: scale(1.02);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.consRowLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.consRowIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.consTitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.consValue {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.consWinRateContainer {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.consWinRateBar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.consWinRateFill {
+    height: 100%;
+    transition: width 1s ease-out;
+}
+
+/* Dynamic glow effects */
+.glowGreen { text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+.glowRed { text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+/* Fila 4: Quick Actions */
+.actionsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    color: var(--white);
+    border: 1px solid var(--border-color);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: var(--radius-lg);
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.actionBtn:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Fila 5: Setups Analytics */
+.setupAnalysisList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.setupAnalysisCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.setupMetaTitle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(255,255,255,0.05);
+}
+
+.setupGridMetrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    background: var(--bg-primary);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+}
+
+.setupGridMetrics div {
+    display: flex;
+    flex-direction: column;
+}
+
+.setupGridMetrics span {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.setupGridMetrics strong {
+    font-size: 0.95rem;
+    color: var(--white);
+}
+
+/* Base Top Setups List */
+.setupList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.setupItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.setupInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.setupColor {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}

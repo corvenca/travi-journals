@@ -1,0 +1,214 @@
+.reportesContainer {
+    padding: 2rem;
+    color: var(--text-primary);
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.25rem;
+    margin-top: 0;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.filterBar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-secondary);
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.filterGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.filterGroup label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+}
+
+.filterInput {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--white);
+    color-scheme: dark;
+    font-size: 0.9rem;
+}
+
+.btnPrimary {
+    padding: 0.5rem 1rem;
+    background: var(--accent-primary);
+    color: var(--white);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+    height: 38px;
+    transition: 0.2s;
+}
+.btnPrimary:hover { background: #2563eb; }
+
+.btnSecondary {
+    padding: 0.5rem 1rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+    height: 38px;
+    transition: 0.2s;
+}
+.btnSecondary:hover { background: rgba(255,255,255,0.05); }
+
+.btnExport {
+    padding: 0.5rem 1rem;
+    background: var(--danger);
+    color: var(--white);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    align-self: flex-end;
+    height: 38px;
+    transition: 0.2s;
+}
+.btnExport:hover { background: #dc2626; }
+
+/* GENERAL METRICS */
+.metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.metricCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: transform 0.2s;
+}
+.metricCard:hover {
+    border-color: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+}
+
+.metricLbl {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.metricVal {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--white);
+}
+
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+
+/* TABLES */
+.sectionBlock {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.sectionTitle {
+    font-size: 1.15rem;
+    color: var(--white);
+    margin: 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+.tableContainer {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dataTable th, .dataTable td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    white-space: nowrap;
+}
+
+.dataTable th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: rgba(0,0,0,0.2);
+}
+
+.dataTable tr:hover td {
+    background: rgba(255,255,255,0.02);
+}
+
+.dataTable td {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
