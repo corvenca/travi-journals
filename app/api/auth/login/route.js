@@ -11,18 +11,31 @@ const pool = new Pool({
 
 export async function POST(request) {
   try {
-    const { email, password } = await request.json()
+    const body = await request.json()
+    const reqEmail = body.email || ''
+    const password = body.password || ''
+    
+    const email = reqEmail.trim()
+
     if (!email || !password) {
       return NextResponse.json({ error: 'Email y contraseña requeridos' }, { status: 400 })
     }
+    
+    console.log(`[LOGIN ATTEMPT] Email: '${email}'`);
+
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email])
+    
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
+      console.log(`[LOGIN FAILED] No se encontró el usuario: ${email}`);
+      return NextResponse.json({ error: 'Credenciales incorrectas (Usuario no encontrado)' }, { status: 401 })
     }
+    
     const user = result.rows[0]
     const valid = await bcrypt.compare(password, user.password_hash)
+    
     if (!valid) {
-      return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
+      console.log(`[LOGIN FAILED] Contraseña incorrecta para: ${email}`);
+      return NextResponse.json({ error: 'Credenciales incorrectas (Contraseña no coincide)' }, { status: 401 })
     }
     const token = jwt.sign(
       { userId: user.id, email: user.email, nombre: user.nombre },
