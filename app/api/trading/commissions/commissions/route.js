@@ -19,10 +19,10 @@ export async function GET(request) {
         const accountId = parseInt(accountIdRaw, 10);
 
         const commissions = db.prepare(`
-            SELECT c.*, o.symbol, o.side, o.setupId 
+            SELECT c.*, o.symbol, o.side, o."setupId" 
             FROM trading_commissions c
-            LEFT JOIN trading_operations o ON c.operationId = o.id
-            WHERE c.accountId = ?
+            LEFT JOIN trading_operations o ON c."operationId" = o.id
+            WHERE c."accountId" = ?
             ORDER BY c.date DESC, c.id DESC
         `).all(accountId);
 
