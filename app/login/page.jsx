@@ -87,7 +87,7 @@ export default function LoginPage() {
                onMouseOver={(e) => e.target.style.color = '#17815f'}
                onMouseOut={(e) => e.target.style.color = '#1D9E75'}
             >
-              Regístrate
+              Regístrate aquí
             </a>
           </div>
         </div>
