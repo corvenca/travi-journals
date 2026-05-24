@@ -1,6 +1,6 @@
 .container {
   padding: 24px;
-  background: #f8faf9;
+  background: #f0f7f4;
   min-height: 100vh;
   color: #1a1a1a;
 }
@@ -9,20 +9,20 @@
 .subtitle { font-size: 12px; color: #666; margin-top: 3px; }
 
 .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
-.sc { background: #fff; border-radius: 10px; padding: 14px; border-top: 2px solid #e0e0e0; border: 0.5px solid #e0e0e0; border-top-width: 2px; }
+.sc { background: #ffffff; border-radius: 10px; padding: 14px; border-top: 2px solid #c8e6d4; border: 0.5px solid #c8e6d4; border-top-width: 2px; }
 .scLbl { font-size: 9px; letter-spacing: 1.5px; color: #999; margin-bottom: 8px; font-weight: 500; }
 .scVal { font-size: 20px; font-weight: 500; color: #1a1a1a; }
 
-.cal { background: #fff; border-radius: 12px; padding: 20px; border: 0.5px solid #e0e0e0; }
+.cal { background: #ffffff; border-radius: 12px; padding: 20px; border: 0.5px solid #c8e6d4; }
 .calHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-.navBtn { background: #f0f0f0; border: 0.5px solid #ddd; border-radius: 6px; color: #333; width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.navBtn { background: #e8f5ee; border: 0.5px solid #c8e6d4; border-radius: 6px; color: #1D9E75; width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
 .navBtn:hover { background: #e0e0e0; }
 .monthTitle { font-size: 15px; font-weight: 500; color: #1a1a1a; }
 .dayLabels { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 6px; }
-.dl { text-align: center; font-size: 10px; color: #999; font-weight: 500; padding: 4px 0; }
+.dl { text-align: center; font-size: 10px; color: #5a8a72; font-weight: 500; padding: 4px 0; }
 .grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
 .empty { height: 74px; }
-.day { height: 74px; border-radius: 8px; padding: 8px; background: #f5f5f5; border: 0.5px solid #e0e0e0; display: flex; flex-direction: column; cursor: pointer; transition: all 0.15s; }
+.day { height: 74px; border-radius: 8px; padding: 8px; background: #f5fbf7; border: 0.5px solid #c8e6d4; display: flex; flex-direction: column; cursor: pointer; transition: all 0.15s; }
 .day:hover { border-color: #1D9E75; }
 
 .win {
@@ -46,15 +46,15 @@
 .today .dn { color: #1D9E75 !important; font-weight: 600; }
 .sel { border: 2px solid #0F6E56 !important; }
 
-.dn { font-size: 11px; font-weight: 500; color: #999; }
+.dn { font-size: 11px; font-weight: 500; color: #5a8a72; }
 .dpnl { font-size: 11px; font-weight: 500; margin-top: auto; }
-.dops { font-size: 10px; color: #aaa; margin-top: 1px; }
+.dops { font-size: 10px; color: #8ab89e; margin-top: 1px; }
 
-.detail { margin-top: 14px; background: #f5f5f5; border-radius: 10px; padding: 16px; border: 0.5px solid #e0e0e0; }
+.detail { margin-top: 14px; background: #f5fbf7; border-radius: 10px; padding: 16px; border: 0.5px solid #c8e6d4; }
 .detailTitle { font-size: 13px; font-weight: 500; color: #1D9E75; margin-bottom: 12px; }
 .detailGrid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
 .detailGrid div { display: flex; flex-direction: column; gap: 4px; }
-.dlbl { font-size: 9px; color: #999; letter-spacing: 1.5px; }
+.dlbl { font-size: 9px; color: #8ab89e; letter-spacing: 1.5px; }
 .dval { font-size: 15px; font-weight: 500; color: #1a1a1a; }
 
 .filterRow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
