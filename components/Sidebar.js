@@ -24,11 +24,11 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
 
     useEffect(() => {
         fetch('/api/auth/session')
-            .then(res => res.json())
+            .then(r => r.json())
             .then(data => {
-                if (data.authenticated) setUser(data.user);
+                setUser(data);
             })
-            .catch(console.error);
+            .catch(() => setUser({ username: 'Trader', role: 'USER' }));
         
         if (pathname.startsWith('/trading')) {
             fetch('/api/trading/accounts')
@@ -37,7 +37,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 .catch(console.error);
         }
 
-        if (pathname === '/trading' || pathname === '/trading?action=create') {
+        if (pathname === '/trading?action=create') {
             setIsAccountsOpen(true);
         }
     }, [pathname]);
@@ -87,7 +87,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                     );
                 })}
 
-                {pathname.startsWith('/trading') && user?.username === 'ronalbis' && (
+                {pathname.startsWith('/trading') && (
                     <>
                         <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '1rem' }}>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'block' }}>
@@ -112,15 +112,23 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                         </Link>
 
                         <div className={styles.navGroup}>
-                            <button
-                                className={`${styles.navItem} ${styles.navGroupBtn} ${pathname === '/trading' ? styles.active : ''}`}
-                                onClick={() => setIsAccountsOpen(!isAccountsOpen)}
+                            <div
+                                className={`${styles.navItem} ${styles.navGroupBtn} ${pathname === '/trading' || pathname.startsWith('/trading/cuenta') ? styles.active : ''}`}
+                                onClick={() => {
+                                    setIsAccountsOpen(!isAccountsOpen);
+                                    router.push('/trading');
+                                }}
+                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <Briefcase size={20} /> Centro de Cuentas
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <rect x="1" y="2" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                                        <path d="M4 6h6M4 9h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                    </svg>
+                                    Centro de Cuentas
                                 </div>
-                                {isAccountsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                                <span style={{ fontSize: '10px', opacity: 0.5 }}>{isAccountsOpen ? '▲' : '▼'}</span>
+                            </div>
                             
                             {isAccountsOpen && (
                                 <div className={styles.subMenu}>
@@ -169,18 +177,26 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 )}
             </nav>
             <div className={styles.userSection}>
-                {user && (
-                    <div className={styles.userInfo}>
-                        <span className={styles.userName}>{user.name}</span>
-                        <span className={styles.userRole}>{user.role}</span>
-                    </div>
-                )}
+                <div style={{ padding: '12px 16px', borderTop: '0.5px solid #1a3a24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#0f2e1a', border: '0.5px solid #1D9E75', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#1D9E75', fontWeight: '500', flexShrink: 0 }}>
+                    {user?.username?.charAt(0)?.toUpperCase() || 'T'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username || 'Trader'}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.4)' }}>Plan Free</div>
+                  </div>
+                </div>
                 
-                {user?.username === 'ronalbis' && (
-                    <button className={styles.changeModuleBtn} onClick={() => router.push('/seleccionar-modulo')}>
-                        <Replace size={18} /> CAMBIAR MÓDULO
-                    </button>
-                )}
+                <a
+                  href="http://localhost:3000/dashboard"
+                  className={styles.changeModuleBtn}
+                  style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M8 7H2M4 5L2 7L4 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Volver a Travitrade
+                </a>
 
                 <button className={styles.logoutBtn} onClick={handleLogout}>
                     <LogOut size={18} /> CERRAR SESIÓN

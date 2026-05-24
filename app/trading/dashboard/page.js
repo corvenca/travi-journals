@@ -43,6 +43,7 @@ export default function TradingDashboard() {
     const router = useRouter();
     const { activeAccount, isLoaded } = useActiveAccount();
     
+    const [userName, setUserName] = useState('');
     const [metrics, setMetrics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [range, setRange] = useState('ALL');
@@ -53,6 +54,13 @@ export default function TradingDashboard() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [showSetupModal, setShowSetupModal] = useState(false);
+
+    useEffect(() => {
+      fetch('/api/auth/me')
+        .then(r => r.json())
+        .then(data => { if (data.nombre) setUserName(data.nombre) })
+        .catch(() => {})
+    }, [])
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -112,12 +120,28 @@ export default function TradingDashboard() {
             <header className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Dashboard de {activeAccount.name}</h1>
+                    {userName && (
+                      <div style={{
+                        background: '#0d1f14',
+                        border: '0.5px solid #1a3a24',
+                        borderRadius: '8px',
+                        padding: '10px 16px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        marginTop: '12px'
+                      }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0f2e1a', border: '0.5px solid #1D9E75', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#1D9E75', fontWeight: '500', flexShrink: 0 }}>
+                          {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', color: 'rgba(159,225,203,0.5)', marginBottom: '1px' }}>Bienvenido de vuelta</div>
+                          <div style={{ fontSize: '15px', fontWeight: '500', color: '#fff' }}>{userName}</div>
+                        </div>
+                      </div>
+                    )}
                     <p className={styles.subtitle}>Resumen de tu rendimiento y consistencia.</p>
-                    <div style={{display:'flex', gap:'8px', marginTop: '12px'}}>
-                      <span style={{padding:'4px 10px', borderRadius:'20px', fontSize:'11px', background:'#0f2e1a', color:'#1D9E75', border:'0.5px solid #1D9E75'}}>● Mercado abierto</span>
-                      <span style={{padding:'4px 10px', borderRadius:'20px', fontSize:'11px', background:'#0d1f14', color:'#9FE1CB', border:'0.5px solid #1a3a24'}}>NQ 21,430</span>
-                      <span style={{padding:'4px 10px', borderRadius:'20px', fontSize:'11px', background:'#0d1f14', color:'#9FE1CB', border:'0.5px solid #1a3a24'}}>MNQ 2,143</span>
-                    </div>
                 </div>
             </header>
 
@@ -421,7 +445,7 @@ export default function TradingDashboard() {
                             <span className={styles.consTitle}>Break Even</span>
                           </div>
                           <span className={styles.consValue} style={{color: '#F59E0B'}}>
-                            {metrics?.consistency?.breakEvens || 0}
+                            {metrics?.breakEvenTrades || 0}
                           </span>
                         </div>
 

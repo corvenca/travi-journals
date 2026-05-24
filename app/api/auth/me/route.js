@@ -6,10 +6,10 @@ export async function GET() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('journals_token')
-    if (!token) return NextResponse.json({ username: 'Trader', role: 'USER' })
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025')
-    return NextResponse.json({ username: decoded.nombre, email: decoded.email, role: 'ADMIN' })
+    return NextResponse.json({ nombre: decoded.nombre, email: decoded.email, userId: decoded.userId })
   } catch {
-    return NextResponse.json({ username: 'Trader', role: 'USER' })
+    return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
   }
 }

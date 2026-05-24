@@ -174,9 +174,14 @@ export async function GET(request) {
             if (gross > metrics.bestTrade) metrics.bestTrade = gross;
             if (gross < metrics.worstTrade) metrics.worstTrade = gross;
 
-            if (op.resultType === 'GANADA' || gross > 0) metrics.winningTrades++;
-            else if (op.resultType === 'PERDIDA' || gross < 0) metrics.losingTrades++;
-            else metrics.breakEvenTrades++;
+            if (op.resultType === 'GANADA') metrics.winningTrades++;
+            else if (op.resultType === 'PERDIDA') metrics.losingTrades++;
+            else if (op.resultType === 'BREAK_EVEN') metrics.breakEvenTrades++;
+            else {
+              if (gross > 0) metrics.winningTrades++;
+              else if (gross < 0) metrics.losingTrades++;
+              else metrics.breakEvenTrades++;
+            }
 
             // Logic to group main dash curve dynamically
             let curveGroupingKey = '';
@@ -209,9 +214,14 @@ export async function GET(request) {
                 s.totalCommissions += comRef;
                 s.pnlNeto += net;
                 
-                if (op.resultType === 'GANADA' || gross > 0) s.winningTrades++;
-                else if (op.resultType === 'PERDIDA' || gross < 0) s.losingTrades++;
-                else s.breakEvenTrades++;
+                if (op.resultType === 'GANADA') s.winningTrades++;
+                else if (op.resultType === 'PERDIDA') s.losingTrades++;
+                else if (op.resultType === 'BREAK_EVEN') s.breakEvenTrades++;
+                else {
+                    if (gross > 0) s.winningTrades++;
+                    else if (gross < 0) s.losingTrades++;
+                    else s.breakEvenTrades++;
+                }
                 
                 s.rrSum += (op.resultR || 0);
                 s.currentEquity += net;

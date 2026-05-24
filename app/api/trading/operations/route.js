@@ -52,10 +52,11 @@ export async function POST(request) {
         }
 
         const data = await request.json();
+        console.log('DATA RECIBIDA:', data); // debug
         
         const {
             accountId, date, symbol, side, sesion, setupId,
-            pnl = 0, riesgo = 0, comision = 0, notes, imageUrl, contratos, resultType
+            pnl = 0, riesgo = 0, comision = 0, notes, imageUrl, contratos, resultType: inputResultType, tipoResultado
         } = data;
 
         const parsedPnl = parseFloat(pnl);
@@ -81,8 +82,20 @@ export async function POST(request) {
             }
         }
 
-        // Calcular Result Type y RR ajustado a puro PNL Bruto 
-        let finalResultType = resultType || (parsedPnl > 0 ? 'GANADA' : (parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN'));
+        let finalResultType;
+        const userResultType = inputResultType || tipoResultado || '';
+        
+        if (userResultType === 'BE') {
+            finalResultType = 'BREAK_EVEN';
+        } else if (userResultType === 'SL') {
+            finalResultType = 'PERDIDA';
+        } else if (userResultType === 'TP') {
+            finalResultType = 'GANADA';
+        } else if (userResultType === 'BREAK_EVEN' || userResultType === 'GANADA' || userResultType === 'PERDIDA') {
+            finalResultType = userResultType;
+        } else {
+            finalResultType = parsedPnl > 0 ? 'GANADA' : parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN';
+        }
         let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
 
         const stmt = db.prepare(`

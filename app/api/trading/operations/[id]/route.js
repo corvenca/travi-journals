@@ -50,7 +50,17 @@ export async function PUT(request, context) {
             }
         }
 
-        let resultType = parsedPnl > 0 ? 'GANADA' : (parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN');
+        let finalResultType;
+        const resultType = data.resultType;
+        if (resultType === 'BE' || resultType === 'BREAK_EVEN') {
+            finalResultType = 'BREAK_EVEN';
+        } else if (resultType === 'SL' || resultType === 'PERDIDA') {
+            finalResultType = 'PERDIDA';
+        } else if (resultType === 'TP' || resultType === 'GANADA') {
+            finalResultType = 'GANADA';
+        } else {
+            finalResultType = parsedPnl > 0 ? 'GANADA' : (parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN');
+        }
         let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
 
         const stmt = db.prepare(`
@@ -81,7 +91,7 @@ export async function PUT(request, context) {
             parsedRiesgo,
             parsedComision,
             rr,
-            resultType,
+            finalResultType,
             notes || null,
             imageUrl || null,
             parsedContratos,

@@ -32,7 +32,7 @@ export default function TradingOperationsLog() {
     // Form State
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
-        symbol: 'NQ',
+        symbol: '',
         side: '', // LONG | SHORT
         sesion: '09:30',
         setupId: '',
@@ -93,7 +93,7 @@ export default function TradingOperationsLog() {
 
         setFormData({
             date: new Date().toISOString().split('T')[0],
-            symbol: 'NQ',
+            symbol: '',
             side: '',
             sesion: '09:30',
             setupId: '',
@@ -114,7 +114,7 @@ export default function TradingOperationsLog() {
 
         setFormData({
             date: op.date || new Date().toISOString().split('T')[0],
-            symbol: op.symbol || 'NQ',
+            symbol: op.symbol || '',
             side: op.side || '',
             sesion: op.sesion || '09:30',
             setupId: op.setupId || '',
@@ -165,7 +165,7 @@ export default function TradingOperationsLog() {
                 contratos: parseInt(formData.contratos, 10),
                 notes: formData.notes,
                 imageUrl: formData.imageUrl,
-                resultType: resultType === 'TP' ? 'GANADA' : resultType === 'SL' ? 'PERDIDA' : resultType === 'BE' ? 'BREAK_EVEN' : undefined
+                resultType: resultType,
             };
 
             const url = isEditing ? `/api/trading/operations/${editId}` : '/api/trading/operations';
@@ -270,8 +270,8 @@ export default function TradingOperationsLog() {
 
                         {/* DERECHA: Financieros */}
                         <div className={styles.cardFinancials}>
-                            <div className={`${styles.cardPnl} ${op.pnl > 0 ? styles.positive : op.pnl < 0 ? styles.negative : ''}`}>
-                                {op.pnl > 0 ? '+' : ''}${Math.abs(op.pnl).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                            <div className={styles.cardPnl} style={{ color: op.resultType === 'BREAK_EVEN' ? '#F59E0B' : op.pnl >= 0 ? '#1D9E75' : '#E24B4A', fontWeight: 'bold' }}>
+                                {op.pnl >= 0 ? '+' : ''}${Math.abs(op.pnl).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </div>
                             <div className={styles.cardRisk}>
                                 Riesgo: ${(op.riesgoAmount || Number(op.riskPercent)).toLocaleString('en-US', {minimumFractionDigits: 2})}
