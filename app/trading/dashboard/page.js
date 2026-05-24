@@ -44,6 +44,7 @@ export default function TradingDashboard() {
     const { activeAccount, isLoaded } = useActiveAccount();
     
     const [userName, setUserName] = useState('');
+    const [plan, setPlan] = useState('free');
     const [metrics, setMetrics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [range, setRange] = useState('ALL');
@@ -58,7 +59,10 @@ export default function TradingDashboard() {
     useEffect(() => {
       fetch('/api/auth/me')
         .then(r => r.json())
-        .then(data => { if (data.nombre) setUserName(data.nombre) })
+        .then(data => { 
+          if (data.nombre) setUserName(data.nombre);
+          setPlan(data.plan || 'free');
+        })
         .catch(() => {})
     }, [])
 
@@ -117,6 +121,12 @@ export default function TradingDashboard() {
 
     return (
         <div className={styles.dashboardContainer}>
+            {plan === 'free' && (
+              <div style={{ background: '#0f2e1a', border: '1px solid #1D9E75', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#9FE1CB' }}>Plan Free — {40 - (metrics?.totalTrades || 0)} operaciones restantes</span>
+                <a href="https://app.travitrade.com/registro?plan=pro" style={{ fontSize: '12px', color: '#1D9E75', fontWeight: '500', textDecoration: 'none' }}>Actualizar a Pro →</a>
+              </div>
+            )}
             <header className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Dashboard de {activeAccount.name}</h1>
@@ -559,7 +569,13 @@ export default function TradingDashboard() {
             </div>
 
             {/* FILA 5: ANALISIS DE SETUPS */}
-            <SetupsAnalytics data={metrics?.setupAnalysis} hideSummary={true} />
+            {plan !== 'free' && <SetupsAnalytics data={metrics?.setupAnalysis} hideSummary={true} />}
+            {plan === 'free' && (
+              <div style={{ background: '#0d1f14', border: '0.5px solid #1a3a24', borderRadius: '10px', padding: '20px', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: 'rgba(159,225,203,0.5)', marginBottom: '8px' }}>🔒 Análisis de Setups disponible en Plan Pro</div>
+                <a href="https://app.travitrade.com/registro?plan=pro" style={{ color: '#1D9E75', fontSize: '12px' }}>Actualizar a Pro →</a>
+              </div>
+            )}
 
             {/* GLOBAL MODALS */}
             {showSetupModal && (

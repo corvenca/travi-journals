@@ -8,7 +8,12 @@ export async function GET() {
     const token = cookieStore.get('journals_token')
     if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025')
-    return NextResponse.json({ nombre: decoded.nombre, email: decoded.email, userId: decoded.userId })
+    return NextResponse.json({
+      nombre: decoded.nombre,
+      email: decoded.email,
+      userId: decoded.userId,
+      plan: decoded.plan || 'free'
+    })
   } catch {
     return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
   }

@@ -37,8 +37,11 @@ export async function POST(request) {
       console.log(`[LOGIN FAILED] Contraseña incorrecta para: ${email}`);
       return NextResponse.json({ error: 'Credenciales incorrectas (Contraseña no coincide)' }, { status: 401 })
     }
+    const isAdmin = user.email === 'altuveronalbis@gmail.com'
+    const plan = isAdmin ? 'admin' : (user.plan || 'free')
+
     const token = jwt.sign(
-      { userId: user.id, email: user.email, nombre: user.nombre },
+      { userId: user.id, email: user.email, nombre: user.nombre, plan },
       process.env.JWT_SECRET || 'travitrade_secret_2025',
       { expiresIn: '7d' }
     )

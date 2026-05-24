@@ -45,7 +45,7 @@ export default function CalendarioPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Calendario</h1>
-        <p className={styles.subtitle}>Rendimiento diario — {activeAccount?.name}</p>
+        <p className={styles.subtitle}>Rendimiento diario — {activeAccount?.name || 'Selecciona una cuenta'}</p>
       </header>
 
       <div className={styles.summary}>

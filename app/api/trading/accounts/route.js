@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
 import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
 export async function GET(request) {
     try {
@@ -40,6 +42,21 @@ export async function POST(request) {
         }
 
         console.log('Intentando crear cuenta:', data)
+
+        const cookieStore = await cookies();
+        const token = cookieStore.get('journals_token');
+        if (token) {
+            const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025');
+            const plan = decoded.plan || 'free';
+
+            if (plan === 'free') {
+                // Ignore user_id since it's not in the DB, just count total accounts
+                const existing = await pool.query('SELECT COUNT(*) FROM trading_accounts');
+                if (parseInt(existing.rows[0].count) >= 1) {
+                    return NextResponse.json({ error: 'Plan Free: solo puedes tener 1 cuenta. Actualiza a Pro para cuentas ilimitadas.' }, { status: 403 });
+                }
+            }
+        }
 
         const result = await pool.query(`
             INSERT INTO trading_accounts (name, broker, type, initial_capital, risk_percent, trader_name, trader_email, trader_address, account_number)

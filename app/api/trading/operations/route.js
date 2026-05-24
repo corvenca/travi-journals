@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
 import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
 export async function GET(request) {
     try {
@@ -51,6 +53,20 @@ export async function POST(request) {
 
         const data = await request.json();
         console.log('DATA RECIBIDA:', data); // debug
+        
+        const cookieStore = await cookies();
+        const token = cookieStore.get('journals_token');
+        if (token) {
+            const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025');
+            const plan = decoded.plan || 'free';
+
+            if (plan === 'free') {
+                const existing = await pool.query('SELECT COUNT(*) FROM trading_operations WHERE account_id = $1', [data.accountId]);
+                if (parseInt(existing.rows[0].count) >= 40) {
+                    return NextResponse.json({ error: 'Plan Free: límite de 40 operaciones alcanzado. Actualiza a Pro para operaciones ilimitadas.' }, { status: 403 });
+                }
+            }
+        }
         
         const {
             accountId, date, symbol, side, sesion, setupId,
