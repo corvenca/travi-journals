@@ -98,7 +98,7 @@ export async function PUT(request, context) {
             db.prepare(`
                 INSERT INTO trading_commissions (accountId, operationId, date, amount, description)
                 VALUES (?, ?, ?, ?, ?)
-            `).run(opData.accountId, id, date, parsedComision, 'Comisión actualizada');
+            `).run(opData.account_id, id, date, parsedComision, 'Comisión actualizada');
         }
 
         return NextResponse.json({ success: true }, { status: 200 });

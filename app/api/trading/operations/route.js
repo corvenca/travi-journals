@@ -20,15 +20,15 @@ export async function GET(request) {
                 s.name as setupName,
                 s.color as setupColor
             FROM trading_operations o
-            LEFT JOIN trading_accounts a ON o."accountId" = a.id
-            LEFT JOIN trading_setups s ON o."setupId" = s.id
+            LEFT JOIN trading_accounts a ON o.account_id = a.id
+            LEFT JOIN trading_setups s ON o.setup_id = s.id
             WHERE 1=1
         `;
         const params = [];
 
         if (accountId) {
             params.push(accountId);
-            query += ` AND o."accountId" = $${params.length}`;
+            query += ` AND o.account_id = $${params.length}`;
         }
 
         params.push(limit);
@@ -98,8 +98,8 @@ export async function POST(request) {
 
         const result = await pool.query(`
             INSERT INTO trading_operations (
-                "accountId", "setupId", date, symbol, side, sesion,
-                pnl, "riesgoAmount", comision, "resultR", "resultType", notes, "imageUrl", contratos
+                account_id, setup_id, date, symbol, side, sesion,
+                pnl, riesgo_amount, comision, result_r, result_type, notes, image_url, contratos
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id
         `, [
             accountId || null,
@@ -122,7 +122,7 @@ export async function POST(request) {
 
         if (parsedComision > 0) {
             await pool.query(`
-                INSERT INTO trading_commissions ("accountId", "operationId", date, amount, description)
+                INSERT INTO trading_commissions (account_id, operation_id, date, amount, description)
                 VALUES ($1, $2, $3, $4, $5)
             `, [accountId || null, opId, date, parsedComision, 'Comisión de operación']);
         }

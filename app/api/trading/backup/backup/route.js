@@ -17,8 +17,8 @@ export async function GET(request) {
         let opsQuery = `
             SELECT o.*, s.name as setupName 
             FROM trading_operations o
-            LEFT JOIN trading_setups s ON o."setupId" = s.id
-            WHERE o."accountId" = ?
+            LEFT JOIN trading_setups s ON o.setup_id = s.id
+            WHERE o.account_id = ?
         `;
         const operations = db.prepare(opsQuery).all(accountId);
 
@@ -42,7 +42,7 @@ export async function POST(request) {
             operations: { imported: 0, duplicates: 0, errors: [] }
         };
 
-        const checkOpAlt = db.prepare('SELECT id FROM trading_operations WHERE date = ? AND symbol = ? AND side = ? AND "accountId" = ?');
+        const checkOpAlt = db.prepare('SELECT id FROM trading_operations WHERE date = ? AND symbol = ? AND side = ? AND account_id = ?');
         
         const insertOpWithoutId = db.prepare(`
             INSERT INTO trading_operations 

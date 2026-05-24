@@ -14,65 +14,65 @@ async function initDB() {
         name TEXT NOT NULL,
         broker TEXT,
         type TEXT DEFAULT 'REAL',
-        "initialCapital" REAL DEFAULT 0,
-        "riskPercent" REAL DEFAULT 1,
-        "traderName" TEXT,
-        "traderEmail" TEXT,
-        "traderAddress" TEXT,
-        "accountNumber" TEXT,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        initial_capital REAL DEFAULT 0,
+        risk_percent REAL DEFAULT 1,
+        trader_name TEXT,
+        trader_email TEXT,
+        trader_address TEXT,
+        account_number TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
       CREATE TABLE IF NOT EXISTS trading_setups (
         id SERIAL PRIMARY KEY,
-        "accountId" INTEGER REFERENCES trading_accounts(id),
+        account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         description TEXT,
         color TEXT DEFAULT '#1D9E75',
         direction TEXT DEFAULT 'BOTH',
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW()
       );
       CREATE TABLE IF NOT EXISTS trading_operations (
         id SERIAL PRIMARY KEY,
-        "accountId" INTEGER REFERENCES trading_accounts(id),
-        "setupId" INTEGER REFERENCES trading_setups(id),
+        account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
+        setup_id INTEGER REFERENCES trading_setups(id),
         date TEXT NOT NULL,
         symbol TEXT NOT NULL,
         side TEXT NOT NULL,
         sesion TEXT,
         pnl REAL DEFAULT 0,
-        "riesgoAmount" REAL DEFAULT 0,
+        riesgo_amount REAL DEFAULT 0,
         comision REAL DEFAULT 0,
-        "resultR" REAL DEFAULT 0,
-        "resultType" TEXT DEFAULT 'BREAK_EVEN',
+        result_r REAL DEFAULT 0,
+        result_type TEXT DEFAULT 'BREAK_EVEN',
         notes TEXT,
-        "imageUrl" TEXT,
+        image_url TEXT,
         contratos INTEGER DEFAULT 1,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW()
       );
       CREATE TABLE IF NOT EXISTS trading_commissions (
         id SERIAL PRIMARY KEY,
-        "accountId" INTEGER REFERENCES trading_accounts(id),
-        "operationId" INTEGER REFERENCES trading_operations(id),
+        account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
+        operation_id INTEGER REFERENCES trading_operations(id) ON DELETE CASCADE,
         date TEXT,
         amount REAL DEFAULT 0,
         description TEXT,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW()
       );
       CREATE TABLE IF NOT EXISTS trading_captures (
         id SERIAL PRIMARY KEY,
-        "operationId" INTEGER REFERENCES trading_operations(id),
+        operation_id INTEGER REFERENCES trading_operations(id) ON DELETE CASCADE,
         url TEXT,
-        "createdAt" TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW()
       );
       CREATE TABLE IF NOT EXISTS user_instruments (
         id SERIAL PRIMARY KEY,
-        "userId" INTEGER DEFAULT 1,
+        user_id INTEGER DEFAULT 1,
         category TEXT NOT NULL,
         ticker TEXT NOT NULL,
         name TEXT,
         active INTEGER DEFAULT 1,
-        "createdAt" TIMESTAMP DEFAULT NOW(),
-        UNIQUE("userId", ticker)
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, ticker)
       );
     `)
     console.log('PostgreSQL tablas inicializadas correctamente')
@@ -82,5 +82,4 @@ async function initDB() {
 }
 
 initDB()
-
 export default pool

@@ -12,8 +12,8 @@ export async function GET(request) {
         const result = await pool.query(`
             SELECT 
                 a.*,
-                (SELECT COUNT(*) FROM trading_operations o WHERE o."accountId" = a.id) as operationsCount,
-                (SELECT SUM(pnl) FROM trading_operations o WHERE o."accountId" = a.id) as totalPnl
+                (SELECT COUNT(*) FROM trading_operations o WHERE o.account_id = a.id) as operationsCount,
+                (SELECT SUM(pnl) FROM trading_operations o WHERE o.account_id = a.id) as totalPnl
             FROM trading_accounts a
             ORDER BY a.id DESC
         `);
@@ -42,7 +42,7 @@ export async function POST(request) {
         console.log('Intentando crear cuenta:', data)
 
         const result = await pool.query(`
-            INSERT INTO trading_accounts (name, broker, type, "initialCapital", "riskPercent", "traderName", "traderEmail", "traderAddress", "accountNumber")
+            INSERT INTO trading_accounts (name, broker, type, initial_capital, risk_percent, trader_name, trader_email, trader_address, account_number)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
         `, [
             name,
@@ -108,12 +108,12 @@ export async function PUT(request) {
                 name = $1, 
                 broker = $2, 
                 type = $3, 
-                "initialCapital" = $4, 
-                "riskPercent" = $5,
-                "traderName" = $6,
-                "traderEmail" = $7,
-                "traderAddress" = $8,
-                "accountNumber" = $9
+                initial_capital = $4, 
+                risk_percent = $5,
+                trader_name = $6,
+                trader_email = $7,
+                trader_address = $8,
+                account_number = $9
             WHERE id = $10
         `, [
             name,

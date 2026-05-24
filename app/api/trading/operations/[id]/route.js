@@ -65,18 +65,18 @@ export async function PUT(request, context) {
 
         await pool.query(`
             UPDATE trading_operations SET
-                "setupId" = $1, 
+                setup_id = $1, 
                 date = $2, 
                 symbol = $3, 
                 side = $4, 
                 sesion = $5,
                 pnl = $6, 
-                "riesgoAmount" = $7, 
+                riesgo_amount = $7, 
                 comision = $8,
-                "resultR" = $9, 
-                "resultType" = $10, 
+                result_r = $9, 
+                result_type = $10, 
                 notes = $11, 
-                "imageUrl" = $12,
+                image_url = $12,
                 contratos = $13
             WHERE id = $14
         `, [
@@ -96,15 +96,15 @@ export async function PUT(request, context) {
             id
         ]);
 
-        const opDataResult = await pool.query('SELECT "accountId" FROM trading_operations WHERE id = $1', [id]);
+        const opDataResult = await pool.query('SELECT account_id FROM trading_operations WHERE id = $1', [id]);
         const opData = opDataResult.rows[0];
         
-        await pool.query('DELETE FROM trading_commissions WHERE "operationId" = $1', [id]);
+        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1', [id]);
         if (parsedComision > 0 && opData) {
             await pool.query(`
-                INSERT INTO trading_commissions ("accountId", "operationId", date, amount, description)
+                INSERT INTO trading_commissions (account_id, operation_id, date, amount, description)
                 VALUES ($1, $2, $3, $4, $5)
-            `, [opData.accountId, id, date, parsedComision, 'Comisión actualizada']);
+            `, [opData.account_id, id, date, parsedComision, 'Comisión actualizada']);
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
@@ -132,7 +132,7 @@ export async function DELETE(request, context) {
         const id = paramsId;
         if (!id) return NextResponse.json({ error: 'No se recibió el id de la operación para eliminar (ID es requerido)' }, { status: 400 });
 
-        await pool.query('DELETE FROM trading_commissions WHERE "operationId" = $1', [id]);
+        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1', [id]);
         await pool.query('DELETE FROM trading_operations WHERE id = $1', [id]);
 
         return NextResponse.json({ success: true }, { status: 200 });

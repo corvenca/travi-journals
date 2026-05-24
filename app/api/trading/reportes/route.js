@@ -26,7 +26,7 @@ export async function GET(request) {
 
             if (accountIdRaw && accountIdRaw !== 'undefined' && accountIdRaw !== 'null') {
                 try {
-                    const opsAccountResult = await pool.query('SELECT COUNT(*) as total FROM trading_operations WHERE "accountId" = $1', [parseInt(accountIdRaw, 10)]);
+                    const opsAccountResult = await pool.query('SELECT COUNT(*) as total FROM trading_operations WHERE account_id = $1', [parseInt(accountIdRaw, 10)]);
                     console.log('Operaciones para accountId', accountIdRaw, ':', opsAccountResult.rows[0].total);
                 } catch (errCol) {
                     console.log('Error intentando COUNT con accountId:', errCol.message);
@@ -44,7 +44,7 @@ export async function GET(request) {
 
         const accountId = parseInt(accountIdRaw, 10);
 
-        const accountInfoResult = await pool.query('SELECT "initialCapital" FROM trading_accounts WHERE id = $1', [accountId]);
+        const accountInfoResult = await pool.query('SELECT initial_capital FROM trading_accounts WHERE id = $1', [accountId]);
         const accountInfo = accountInfoResult.rows[0];
         const initialCapital = accountInfo?.initialCapital || 0;
 
@@ -61,16 +61,16 @@ export async function GET(request) {
         }
 
         const operationsResult = await pool.query(`
-            SELECT id, date, pnl, comision, "resultR", "resultType", "accountId", "setupId", symbol, sesion, side, contratos, "riesgoAmount", "imageUrl"
+            SELECT id, date, pnl, comision, result_r, result_type, account_id, setup_id, symbol, sesion, side, contratos, riesgo_amount, image_url
             FROM trading_operations
-            WHERE "accountId" = $1 ${dateFilter}
+            WHERE account_id = $1 ${dateFilter}
             ORDER BY date ASC
         `, params);
         const operations = operationsResult.rows;
 
         const commsDbResult = await pool.query(`
             SELECT amount FROM trading_commissions
-            WHERE "accountId" = $1 ${dateFilter}
+            WHERE account_id = $1 ${dateFilter}
         `, params);
         const commsDb = commsDbResult.rows;
         let totalCommissionsDb = 0;

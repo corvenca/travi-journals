@@ -29,7 +29,7 @@ export async function GET(request) {
         SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins,
         SUM(CASE WHEN substring(date, 1, 7) = substring(CURRENT_DATE::text, 1, 7) THEN pnl ELSE 0 END) as "thisMonthPnl"
       FROM trading_operations
-      WHERE "accountId" = ANY($1::int[])
+      WHERE account_id = ANY($1::int[])
     `, [accountIds])
 
     const stats = statsResult.rows[0]

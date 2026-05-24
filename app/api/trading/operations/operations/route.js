@@ -22,14 +22,14 @@ export async function GET(request) {
                 s.name as setupName,
                 s.color as setupColor
             FROM trading_operations o
-            LEFT JOIN trading_accounts a ON o."accountId" = a.id
-            LEFT JOIN trading_setups s ON o."setupId" = s.id
+            LEFT JOIN trading_accounts a ON o.account_id = a.id
+            LEFT JOIN trading_setups s ON o.setup_id = s.id
             WHERE 1=1
         `;
         const params = [];
 
         if (accountId) {
-            query += ` AND o."accountId" = ?`;
+            query += ` AND o.account_id = ?`;
             params.push(accountId);
         }
 

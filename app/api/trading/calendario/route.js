@@ -18,7 +18,7 @@ export async function GET(request) {
       SUM(CASE WHEN pnl < 0 THEN 1 ELSE 0 END) as losses,
       SUM(CASE WHEN pnl = 0 THEN 1 ELSE 0 END) as "breakEvens"
       FROM trading_operations
-      WHERE "accountId" = $1 AND substring(date, 1, 7) = $2
+      WHERE account_id = $1 AND substring(date, 1, 7) = $2
       GROUP BY date ORDER BY date ASC
     `, [parseInt(accountId, 10), monthStr])
     return NextResponse.json({ dailyData: result.rows, month, year })

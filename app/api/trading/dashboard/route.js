@@ -19,7 +19,7 @@ export async function GET(request) {
             return NextResponse.json({ error: 'El accountId es requerido' }, { status: 400 });
         }
 
-        const accountInfoResult = await pool.query('SELECT "initialCapital" FROM trading_accounts WHERE id = $1', [accountId]);
+        const accountInfoResult = await pool.query('SELECT initial_capital FROM trading_accounts WHERE id = $1', [accountId]);
         const accountInfo = accountInfoResult.rows[0];
         const initialCapital = accountInfo?.initialCapital || 0;
 
@@ -47,29 +47,29 @@ export async function GET(request) {
         const monthsQueryResult = await pool.query(`
           SELECT DISTINCT substring(date, 1, 7) as value,
           substring(date, 6, 2) || '/' || substring(date, 1, 4) as label
-          FROM trading_operations WHERE "accountId" = $1
+          FROM trading_operations WHERE account_id = $1
           ORDER BY value DESC
         `, [targetAccount]);
         const monthsQuery = monthsQueryResult.rows;
 
         const yearsQueryResult = await pool.query(`
           SELECT DISTINCT substring(date, 1, 4) as year
-          FROM trading_operations WHERE "accountId" = $1
+          FROM trading_operations WHERE account_id = $1
           ORDER BY year DESC
         `, [targetAccount]);
         const yearsQuery = yearsQueryResult.rows;
 
         const operationsResult = await pool.query(`
-            SELECT id, date, pnl, comision, "resultR", "resultType", "accountId", "setupId"
+            SELECT id, date, pnl, comision, result_r, result_type, account_id, setup_id
             FROM trading_operations
-            WHERE "accountId" = $1 ${dateFilter}
+            WHERE account_id = $1 ${dateFilter}
             ORDER BY date ASC
         `, [targetAccount]);
         const operations = operationsResult.rows;
 
         const commsDbResult = await pool.query(`
             SELECT amount, date FROM trading_commissions
-            WHERE "accountId" = $1 ${dateFilter}
+            WHERE account_id = $1 ${dateFilter}
         `, [targetAccount]);
         const commsDb = commsDbResult.rows;
 

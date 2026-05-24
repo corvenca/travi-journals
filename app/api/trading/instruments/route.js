@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const result = await pool.query(`
-      SELECT * FROM user_instruments WHERE "userId" = 1 AND active = 1 ORDER BY category, ticker
+      SELECT * FROM user_instruments WHERE user_id = 1 AND active = 1 ORDER BY category, ticker
     `)
     return NextResponse.json(result.rows)
   } catch (error) {
@@ -19,8 +19,8 @@ export async function POST(request) {
   if (!category || !ticker) return NextResponse.json({ error: 'Categoría y ticker son requeridos' }, { status: 400 })
   try {
     const result = await pool.query(`
-      INSERT INTO user_instruments ("userId", category, ticker, name) VALUES (1, $1, $2, $3)
-      ON CONFLICT ("userId", ticker) DO NOTHING RETURNING id
+      INSERT INTO user_instruments (user_id, category, ticker, name) VALUES (1, $1, $2, $3)
+      ON CONFLICT (user_id, ticker) DO NOTHING RETURNING id
     `, [category, ticker.toUpperCase(), name || ticker])
     return NextResponse.json({ success: true, id: result.rows[0]?.id || null })
   } catch (error) {
