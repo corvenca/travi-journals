@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
 
 export async function GET(request) {
@@ -19,57 +19,59 @@ export async function GET(request) {
             return NextResponse.json({ error: 'El accountId es requerido' }, { status: 400 });
         }
 
-        // Fetch Initial Capital
-        const accountInfo = db.prepare('SELECT initialCapital FROM trading_accounts WHERE id = ?').get(accountId);
+        const accountInfoResult = await pool.query('SELECT "initialCapital" FROM trading_accounts WHERE id = $1', [accountId]);
+        const accountInfo = accountInfoResult.rows[0];
         const initialCapital = accountInfo?.initialCapital || 0;
 
-        // Build Time Filter
         let dateFilter = '';
         if (range && range.startsWith('RANGE_')) {
             const parts = range.split('_');
             dateFilter = `AND date >= '${parts[1]}' AND date <= '${parts[2]}'`;
         } else if (range && range.startsWith('YEAR_')) {
             const year = range.split('_')[1];
-            dateFilter = `AND strftime('%Y', date) = '${year}'`;
+            dateFilter = `AND substring(date, 1, 4) = '${year}'`;
         } else if (range && range.match(/^\d{4}-\d{2}$/)) {
-            dateFilter = `AND strftime('%Y-%m', date) = '${range}'`;
+            dateFilter = `AND substring(date, 1, 7) = '${range}'`;
         } else if (range === '7D') {
-            dateFilter = "AND date >= date('now', '-7 days')";
+            dateFilter = "AND date >= (CURRENT_DATE - INTERVAL '7 days')::text";
         } else if (range === '30D') {
-            dateFilter = "AND date >= date('now', '-30 days')";
+            dateFilter = "AND date >= (CURRENT_DATE - INTERVAL '30 days')::text";
         } else if (range === '90D') {
-            dateFilter = "AND date >= date('now', '-90 days')";
+            dateFilter = "AND date >= (CURRENT_DATE - INTERVAL '90 days')::text";
         } else if (range === 'YTD') {
-            dateFilter = "AND strftime('%Y', date) = strftime('%Y', 'now')";
+            dateFilter = "AND substring(date, 1, 4) = substring(CURRENT_DATE::text, 1, 4)";
         }
 
         const targetAccount = parseInt(accountId, 10);
 
-        const monthsQuery = db.prepare(`
-          SELECT DISTINCT strftime('%Y-%m', date) as value,
-          strftime('%m/%Y', date) as label
-          FROM trading_operations WHERE accountId = ?
+        const monthsQueryResult = await pool.query(`
+          SELECT DISTINCT substring(date, 1, 7) as value,
+          substring(date, 6, 2) || '/' || substring(date, 1, 4) as label
+          FROM trading_operations WHERE "accountId" = $1
           ORDER BY value DESC
-        `).all(targetAccount);
+        `, [targetAccount]);
+        const monthsQuery = monthsQueryResult.rows;
 
-        const yearsQuery = db.prepare(`
-          SELECT DISTINCT strftime('%Y', date) as year
-          FROM trading_operations WHERE accountId = ?
+        const yearsQueryResult = await pool.query(`
+          SELECT DISTINCT substring(date, 1, 4) as year
+          FROM trading_operations WHERE "accountId" = $1
           ORDER BY year DESC
-        `).all(targetAccount);
+        `, [targetAccount]);
+        const yearsQuery = yearsQueryResult.rows;
 
-        // Global Operations
-        const operations = db.prepare(`
-            SELECT id, date, pnl, comision, resultR, resultType, accountId, setupId
+        const operationsResult = await pool.query(`
+            SELECT id, date, pnl, comision, "resultR", "resultType", "accountId", "setupId"
             FROM trading_operations
-            WHERE accountId = ? ${dateFilter}
+            WHERE "accountId" = $1 ${dateFilter}
             ORDER BY date ASC
-        `).all(targetAccount);
+        `, [targetAccount]);
+        const operations = operationsResult.rows;
 
-        const commsDb = db.prepare(`
+        const commsDbResult = await pool.query(`
             SELECT amount, date FROM trading_commissions
-            WHERE accountId = ? ${dateFilter}
-        `).all(targetAccount);
+            WHERE "accountId" = $1 ${dateFilter}
+        `, [targetAccount]);
+        const commsDb = commsDbResult.rows;
 
         const metrics = {
             initialCapital,
@@ -108,7 +110,6 @@ export async function GET(request) {
             }
         };
 
-        // Procesar array de comisiones maestro 
         const todayStr = new Date().toISOString().split('T')[0];
         const thisMonthStr = todayStr.substring(0, 7);
 
@@ -121,16 +122,15 @@ export async function GET(request) {
             }
         });
 
-        // Setups Analytics Map Initialization
         const setupsMap = {};
-        const allSetups = db.prepare('SELECT id, name, direction FROM trading_setups').all();
-        allSetups.forEach(s => {
+        const allSetupsResult = await pool.query('SELECT id, name, direction FROM trading_setups');
+        allSetupsResult.rows.forEach(s => {
             setupsMap[s.id] = {
                 id: s.id,
                 name: s.name,
                 direction: s.direction,
                 trades: 0,
-                totalPnl: 0, // gross
+                totalPnl: 0,
                 totalCommissions: 0,
                 pnlNeto: 0,
                 winningTrades: 0,
@@ -144,21 +144,15 @@ export async function GET(request) {
             };
         });
 
-        // Date grouping for Equity Curve and Consistency
         const dailyPnls = {};
-        
         let cumulativePnl = 0;
-
-        // Grouped Equity Curve Map Initialization
         const groupedPnls = {};
-        const opCount = operations.length;
         let tradeCounter = 1;
 
         for (const op of operations) {
-            // "pnl" ahora es estrictamente Bruto tal cual lo pidío el usuario.
             const gross = op.pnl || 0;
             const comRef = op.comision || 0; 
-            const net = gross - comRef; // Para cálculos diarios y de setup usar el neto estimado referencial
+            const net = gross - comRef;
 
             metrics.totalPnl += gross;
             metrics.grossPnl += gross;
@@ -183,7 +177,6 @@ export async function GET(request) {
               else metrics.breakEvenTrades++;
             }
 
-            // Logic to group main dash curve dynamically
             let curveGroupingKey = '';
 
             if (range === '7D' || range === '30D' || range === '90D') {
@@ -206,7 +199,6 @@ export async function GET(request) {
             if (!groupedPnls[curveGroupingKey]) groupedPnls[curveGroupingKey] = 0;
             groupedPnls[curveGroupingKey] += net;
 
-            // Specific Setup processing (keeps track of every single operation for its internal chart/dd logic)
             if (op.setupId && setupsMap[op.setupId]) {
                 const s = setupsMap[op.setupId];
                 s.trades++;
@@ -241,13 +233,11 @@ export async function GET(request) {
                 });
             }
 
-            // Aggregate Daily
             if (!dailyPnls[op.date]) dailyPnls[op.date] = 0;
             dailyPnls[op.date] += net;
             tradeCounter++;
         }
 
-        // Post-loop: Build grouped equity curve
         metrics.equityCurve = [{
             curveKey: 'Inicio',
             equity: initialCapital,
@@ -267,13 +257,9 @@ export async function GET(request) {
 
         metrics.pnlNeto = metrics.totalPnl - metrics.commissions.total;
         metrics.currentEquity = initialCapital + metrics.pnlNeto;
-        // The equity curve is built with `net` incrementally. 
-        // We will do a final reconciliation with independent commissions if we wanted, but the loop used sum of `comRef`
-        // In most cases, independent commissions are rare, but if any exist, we deduct the difference at the end.
         const unassignedCommissions = metrics.commissions.total - (metrics.grossPnl - cumulativePnl);
         if (unassignedCommissions > 0) {
            metrics.currentEquity -= unassignedCommissions;
-           // And attach a final drop in the curve to represent the total diff
            const lastPunt = metrics.equityCurve[metrics.equityCurve.length - 1];
            if (lastPunt && unassignedCommissions !== 0) {
                 metrics.equityCurve.push({ curveKey: 'Ajuste Com.', equity: metrics.currentEquity, pnl: -unassignedCommissions });
@@ -290,7 +276,6 @@ export async function GET(request) {
             metrics.commissions.impactPct = 100;
         }
 
-        // --- Consistency ---
         const dailyKeys = Object.keys(dailyPnls);
         let totalDailyPnlSum = 0;
         
@@ -309,7 +294,6 @@ export async function GET(request) {
             metrics.consistency.avgDailyPnl = totalDailyPnlSum / dailyKeys.length;
         }
 
-        // --- Setups Analytics ---
         const setupsArray = Object.values(setupsMap)
             .filter(s => s.trades > 0)
             .map(s => {
@@ -324,11 +308,10 @@ export async function GET(request) {
                 };
             });
 
-        // Order by highest PnL
         setupsArray.sort((a, b) => b.totalPnl - a.totalPnl);
 
         metrics.setupAnalysis = setupsArray;
-        metrics.topSetups = metrics.setupAnalysis.slice(0, 5); // top 5 only for the mini-widget
+        metrics.topSetups = metrics.setupAnalysis.slice(0, 5);
 
         return NextResponse.json(metrics);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
 
 export async function GET(request) {
@@ -18,17 +18,16 @@ export async function GET(request) {
         console.log('accountId recibido:', accountIdRaw);
 
         try {
-            const cols = db.prepare("PRAGMA table_info(trading_operations)").all();
-            console.log('Columnas reales de trading_operations:', cols.map(c => c.name));
+            const colsResult = await pool.query("SELECT column_name as name FROM information_schema.columns WHERE table_name = 'trading_operations'");
+            console.log('Columnas reales de trading_operations:', colsResult.rows.map(c => c.name));
 
-            const totalOps = db.prepare('SELECT COUNT(*) as total FROM trading_operations').get();
-            console.log('Total operaciones en BD:', totalOps.total);
+            const totalOpsResult = await pool.query('SELECT COUNT(*) as total FROM trading_operations');
+            console.log('Total operaciones en BD:', totalOpsResult.rows[0].total);
 
             if (accountIdRaw && accountIdRaw !== 'undefined' && accountIdRaw !== 'null') {
                 try {
-                    // Try with accountId (as defined in our local schema)
-                    const opsAccount = db.prepare('SELECT COUNT(*) as total FROM trading_operations WHERE accountId = CAST(? AS INTEGER)').get(accountIdRaw);
-                    console.log('Operaciones para accountId', accountIdRaw, ':', opsAccount.total);
+                    const opsAccountResult = await pool.query('SELECT COUNT(*) as total FROM trading_operations WHERE "accountId" = $1', [parseInt(accountIdRaw, 10)]);
+                    console.log('Operaciones para accountId', accountIdRaw, ':', opsAccountResult.rows[0].total);
                 } catch (errCol) {
                     console.log('Error intentando COUNT con accountId:', errCol.message);
                 }
@@ -45,38 +44,42 @@ export async function GET(request) {
 
         const accountId = parseInt(accountIdRaw, 10);
 
-        const accountInfo = db.prepare('SELECT initialCapital FROM trading_accounts WHERE id = ?').get(accountId);
+        const accountInfoResult = await pool.query('SELECT "initialCapital" FROM trading_accounts WHERE id = $1', [accountId]);
+        const accountInfo = accountInfoResult.rows[0];
         const initialCapital = accountInfo?.initialCapital || 0;
 
         let dateFilter = '';
         const params = [accountId];
 
         if (startDate) {
-            dateFilter += ` AND date >= ?`;
             params.push(startDate);
+            dateFilter += ` AND date >= $${params.length}`;
         }
         if (endDate) {
-            dateFilter += ` AND date <= ?`;
             params.push(endDate);
+            dateFilter += ` AND date <= $${params.length}`;
         }
 
-        const operations = db.prepare(`
-            SELECT id, date, pnl, comision, resultR, resultType, accountId, setupId, symbol, sesion, side, contratos, riesgoAmount, imageUrl
+        const operationsResult = await pool.query(`
+            SELECT id, date, pnl, comision, "resultR", "resultType", "accountId", "setupId", symbol, sesion, side, contratos, "riesgoAmount", "imageUrl"
             FROM trading_operations
-            WHERE accountId = ? ${dateFilter}
+            WHERE "accountId" = $1 ${dateFilter}
             ORDER BY date ASC
-        `).all(...params);
+        `, params);
+        const operations = operationsResult.rows;
 
-        const commsDb = db.prepare(`
+        const commsDbResult = await pool.query(`
             SELECT amount FROM trading_commissions
-            WHERE accountId = ? ${dateFilter}
-        `).all(...params);
+            WHERE "accountId" = $1 ${dateFilter}
+        `, params);
+        const commsDb = commsDbResult.rows;
         let totalCommissionsDb = 0;
         commsDb.forEach(c => totalCommissionsDb += c.amount);
 
         console.log(`REPORTES - Operaciones encontradas para cuenta ${accountId}:`, operations.length);
 
-        const allSetups = db.prepare('SELECT id, name, direction FROM trading_setups').all();
+        const allSetupsResult = await pool.query('SELECT id, name, direction FROM trading_setups');
+        const allSetups = allSetupsResult.rows;
         const setupsMap = {};
         allSetups.forEach(s => setupsMap[s.id] = s);
 
@@ -84,15 +87,15 @@ export async function GET(request) {
             general: {
                 initialCapital,
                 currentEquity: initialCapital,
-                totalPnl: 0, // Bruto
-                pnlNeto: 0, // Neto
+                totalPnl: 0, 
+                pnlNeto: 0, 
                 thisMonthPnl: 0,
                 winRate: 0,
                 totalTrades: operations.length,
                 winningTrades: 0,
                 losingTrades: 0,
                 breakEvenTrades: 0,
-                commissions: totalCommissionsDb, // DB Real
+                commissions: totalCommissionsDb,
                 daysOperated: 0,
                 winDays: 0,
                 loseDays: 0,
@@ -123,7 +126,6 @@ export async function GET(request) {
             const pnlNeto = grossPnl - comisionRef;
             const rr = op.resultR || 0;
             
-            // Raw
             const setupObj = setupsMap[op.setupId];
             const setupName = setupObj ? setupObj.name : 'Sin Setup';
             const setupDirection = setupObj ? setupObj.direction : (op.side || '-');
@@ -133,11 +135,9 @@ export async function GET(request) {
                 setupName,
                 setupDirection,
                 commission: comisionRef,
-                // pnl represents gross for legacy references but explicitly we keep op.pnl as gross
             };
             report.rawOperations.push(enrichedOp);
 
-            // --- GENERAL ---
             report.general.totalPnl += grossPnl;
             globalRR += rr;
             if (op.date && op.date.substring(0, 7) === thisMonthStr) report.general.thisMonthPnl += grossPnl;
@@ -154,9 +154,8 @@ export async function GET(request) {
             if (isWin) winningTradesGlobal++;
 
             if (!dailyPnls[op.date]) dailyPnls[op.date] = 0;
-            dailyPnls[op.date] += pnlNeto; // curva y days based on net
+            dailyPnls[op.date] += pnlNeto;
 
-            // --- AGGREGATION HELPER ---
             const aggregate = (targetObject, key, label) => {
                 const safeKey = key || 'Sin Especificar';
                 if (!targetObject[safeKey]) {
@@ -166,7 +165,7 @@ export async function GET(request) {
                         trades: 0,
                         wins: 0,
                         losses: 0,
-                        pnl: 0, // gross
+                        pnl: 0, 
                         comisiones: 0,
                         pnlNeto: 0,
                         rrSum: 0,
@@ -185,28 +184,22 @@ export async function GET(request) {
                 if (isWin) stat.wins++;
                 else if (isLoss) stat.losses++;
 
-                // Drawdown Track on Net
                 stat.currentEquity += pnlNeto;
                 if (stat.currentEquity > stat.maxPeak) stat.maxPeak = stat.currentEquity;
                 const dd = stat.maxPeak - stat.currentEquity;
                 if (dd > stat.maxDD) stat.maxDD = dd;
             };
 
-            // By Setup
             aggregate(report.bySetup, op.setupId || 'NO_SETUP', setupName);
             report.bySetup[op.setupId || 'NO_SETUP'].direction = setupDirection;
 
-            // By Instrument
             aggregate(report.byInstrument, op.symbol, op.symbol);
 
-            // By Session
             aggregate(report.bySession, op.sesion, op.sesion);
 
-            // By Direction
             aggregate(report.byDirection, op.side, op.side);
         });
 
-        // Computed Global Metrics
         report.general.pnlNeto = report.general.totalPnl - report.general.commissions;
         report.general.currentEquity = initialCapital + report.general.pnlNeto;
         if (report.general.totalTrades > 0) {
@@ -230,7 +223,6 @@ export async function GET(request) {
             report.general.avgDailyPnl = report.general.totalPnl / dailyKeys.length;
         }
 
-        // Finalize Arrays and Winrate for Sub-reports
         const finalizeArray = (obj) => {
             return Object.values(obj).map(item => ({
                 ...item,

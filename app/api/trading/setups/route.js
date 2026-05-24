@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
 
 export async function GET(request) {
@@ -9,8 +9,8 @@ export async function GET(request) {
             return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
         }
 
-        const setups = db.prepare('SELECT * FROM trading_setups ORDER BY id DESC').all();
-        return NextResponse.json(setups);
+        const result = await pool.query('SELECT * FROM trading_setups ORDER BY id DESC');
+        return NextResponse.json(result.rows);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -29,13 +29,12 @@ export async function POST(request) {
             return NextResponse.json({ error: 'El nombre y dirección son obligatorios' }, { status: 400 });
         }
 
-        const stmt = db.prepare(`
+        const result = await pool.query(`
             INSERT INTO trading_setups (name, description, color, direction)
-            VALUES (?, ?, ?, ?)
-        `);
-        const info = stmt.run(name, description || '', color || '#3b82f6', direction);
+            VALUES ($1, $2, $3, $4) RETURNING id
+        `, [name, description || '', color || '#3b82f6', direction]);
 
-        return NextResponse.json({ success: true, id: info.lastInsertRowid }, { status: 201 });
+        return NextResponse.json({ success: true, id: result.rows[0].id }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -55,7 +54,7 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'Se requiere ID' }, { status: 400 });
         }
 
-        db.prepare('DELETE FROM trading_setups WHERE id = ?').run(id);
+        await pool.query('DELETE FROM trading_setups WHERE id = $1', [id]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {
@@ -76,11 +75,11 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'ID, nombre y dirección son obligatorios' }, { status: 400 });
         }
 
-        db.prepare(`
+        await pool.query(`
             UPDATE trading_setups 
-            SET name = ?, direction = ? 
-            WHERE id = ?
-        `).run(name, direction, id);
+            SET name = $1, direction = $2 
+            WHERE id = $3
+        `, [name, direction, id]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
-import db from '@/db'
+import pool from '@/db'
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') || 1
 
-    const accounts = db.prepare(`
+    const resultAccounts = await pool.query(`
       SELECT id FROM trading_accounts WHERE 1=1
-    `).all()
+    `)
+    const accounts = resultAccounts.rows
 
     if (accounts.length === 0) {
       return NextResponse.json({
@@ -19,17 +20,19 @@ export async function GET(request) {
       })
     }
 
-    const accountIds = accounts.map(a => a.id).join(',')
+    const accountIds = accounts.map(a => a.id)
 
-    const stats = db.prepare(`
+    const statsResult = await pool.query(`
       SELECT
-        COUNT(*) as totalTrades,
-        SUM(pnl) as totalPnl,
+        COUNT(*) as "totalTrades",
+        SUM(pnl) as "totalPnl",
         SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins,
-        SUM(CASE WHEN strftime('%Y-%m', date) = strftime('%Y-%m', 'now') THEN pnl ELSE 0 END) as thisMonthPnl
+        SUM(CASE WHEN substring(date, 1, 7) = substring(CURRENT_DATE::text, 1, 7) THEN pnl ELSE 0 END) as "thisMonthPnl"
       FROM trading_operations
-      WHERE accountId IN (${accountIds})
-    `).get()
+      WHERE "accountId" = ANY($1::int[])
+    `, [accountIds])
+
+    const stats = statsResult.rows[0]
 
     const winRate = stats.totalTrades > 0
       ? ((stats.wins / stats.totalTrades) * 100).toFixed(1)

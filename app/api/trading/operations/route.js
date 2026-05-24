@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
-import path from 'path';
-import fs from 'fs/promises';
 
 export async function GET(request) {
     try {
@@ -22,22 +20,22 @@ export async function GET(request) {
                 s.name as setupName,
                 s.color as setupColor
             FROM trading_operations o
-            LEFT JOIN trading_accounts a ON o.accountId = a.id
-            LEFT JOIN trading_setups s ON o.setupId = s.id
+            LEFT JOIN trading_accounts a ON o."accountId" = a.id
+            LEFT JOIN trading_setups s ON o."setupId" = s.id
             WHERE 1=1
         `;
         const params = [];
 
         if (accountId) {
-            query += ` AND o.accountId = ?`;
             params.push(accountId);
+            query += ` AND o."accountId" = $${params.length}`;
         }
 
-        query += ` ORDER BY o.date DESC, o.id DESC LIMIT ?`;
         params.push(limit);
+        query += ` ORDER BY o.date DESC, o.id DESC LIMIT $${params.length}`;
 
-        const operations = db.prepare(query).all(...params);
-        return NextResponse.json(operations);
+        const result = await pool.query(query, params);
+        return NextResponse.json(result.rows);
     } catch (error) {
         console.error("GET Operations:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -72,9 +70,9 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Introduce una cantidad válida de contratos.' }, { status: 400 });
         }
 
-        // Validación cruzada de Setup Dirección si existe el setupId
         if (setupId) {
-            const setupObj = db.prepare('SELECT direction FROM trading_setups WHERE id = ?').get(setupId);
+            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1', [setupId]);
+            const setupObj = setupObjResult.rows[0];
             if (setupObj && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
                     error: `Conflicto de Dirección: El Setup seleccionado es exclusivamente para ${setupObj.direction}, pero intentas registrar una operación ${side.toUpperCase()}` 
@@ -98,14 +96,12 @@ export async function POST(request) {
         }
         let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
 
-        const stmt = db.prepare(`
+        const result = await pool.query(`
             INSERT INTO trading_operations (
-                accountId, setupId, date, symbol, side, sesion,
-                pnl, riesgoAmount, comision, resultR, resultType, notes, imageUrl, contratos
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        const info = stmt.run(
+                "accountId", "setupId", date, symbol, side, sesion,
+                pnl, "riesgoAmount", comision, "resultR", "resultType", notes, "imageUrl", contratos
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id
+        `, [
             accountId || null,
             setupId || null,
             date,
@@ -120,16 +116,18 @@ export async function POST(request) {
             notes || null,
             imageUrl || null,
             parsedContratos
-        );
+        ]);
+
+        const opId = result.rows[0].id;
 
         if (parsedComision > 0) {
-            db.prepare(`
-                INSERT INTO trading_commissions (accountId, operationId, date, amount, description)
-                VALUES (?, ?, ?, ?, ?)
-            `).run(accountId || null, info.lastInsertRowid, date, parsedComision, 'Comisión de operación');
+            await pool.query(`
+                INSERT INTO trading_commissions ("accountId", "operationId", date, amount, description)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [accountId || null, opId, date, parsedComision, 'Comisión de operación']);
         }
 
-        return NextResponse.json({ success: true, id: info.lastInsertRowid }, { status: 201 });
+        return NextResponse.json({ success: true, id: opId }, { status: 201 });
     } catch (error) {
         console.error("POST Operations:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

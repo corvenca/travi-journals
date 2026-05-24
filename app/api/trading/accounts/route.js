@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
 
 export async function GET(request) {
@@ -9,16 +9,16 @@ export async function GET(request) {
             return NextResponse.json({ error: 'No Autorizado: Solo ADMIN' }, { status: 403 });
         }
 
-        const accounts = db.prepare(`
+        const result = await pool.query(`
             SELECT 
                 a.*,
-                (SELECT COUNT(*) FROM trading_operations o WHERE o.accountId = a.id) as operationsCount,
-                (SELECT SUM(pnl) FROM trading_operations o WHERE o.accountId = a.id) as totalPnl
+                (SELECT COUNT(*) FROM trading_operations o WHERE o."accountId" = a.id) as operationsCount,
+                (SELECT SUM(pnl) FROM trading_operations o WHERE o."accountId" = a.id) as totalPnl
             FROM trading_accounts a
             ORDER BY a.id DESC
-        `).all();
+        `);
 
-        return NextResponse.json(accounts);
+        return NextResponse.json(result.rows);
     } catch (error) {
         console.error("GET Trading Accounts Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -40,13 +40,11 @@ export async function POST(request) {
         }
 
         console.log('Intentando crear cuenta:', data)
-        console.log('DB path:', process.env.DB_PATH || 'default')
 
-        const stmt = db.prepare(`
-            INSERT INTO trading_accounts (name, broker, type, initialCapital, riskPercent, traderName, traderEmail, traderAddress, accountNumber)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        const info = stmt.run(
+        const result = await pool.query(`
+            INSERT INTO trading_accounts (name, broker, type, "initialCapital", "riskPercent", "traderName", "traderEmail", "traderAddress", "accountNumber")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
+        `, [
             name,
             broker || null,
             type || 'REAL',
@@ -56,9 +54,9 @@ export async function POST(request) {
             traderEmail || null,
             traderAddress || null,
             accountNumber || null
-        );
+        ]);
 
-        return NextResponse.json({ success: true, id: info.lastInsertRowid }, { status: 201 });
+        return NextResponse.json({ success: true, id: result.rows[0].id }, { status: 201 });
     } catch (error) {
         console.error("POST Trading Accounts Error:", error);
         return NextResponse.json(
@@ -82,8 +80,7 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'El ID es obligatorio' }, { status: 400 });
         }
 
-        // SQLite ON DELETE CASCADE should handle operations and captures
-        db.prepare('DELETE FROM trading_accounts WHERE id = ?').run(id);
+        await pool.query('DELETE FROM trading_accounts WHERE id = $1', [id]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {
@@ -106,20 +103,19 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'El ID y nombre son obligatorios' }, { status: 400 });
         }
 
-        const stmt = db.prepare(`
+        await pool.query(`
             UPDATE trading_accounts SET 
-                name = ?, 
-                broker = ?, 
-                type = ?, 
-                initialCapital = ?, 
-                riskPercent = ?,
-                traderName = ?,
-                traderEmail = ?,
-                traderAddress = ?,
-                accountNumber = ?
-            WHERE id = ?
-        `);
-        stmt.run(
+                name = $1, 
+                broker = $2, 
+                type = $3, 
+                "initialCapital" = $4, 
+                "riskPercent" = $5,
+                "traderName" = $6,
+                "traderEmail" = $7,
+                "traderAddress" = $8,
+                "accountNumber" = $9
+            WHERE id = $10
+        `, [
             name,
             broker || null,
             type || 'REAL',
@@ -130,7 +126,7 @@ export async function PUT(request) {
             traderAddress || null,
             accountNumber || null,
             id
-        );
+        ]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/db';
+import pool from '@/db';
 import { getSession } from '@/lib/session';
 
 export async function PUT(request, context) {
@@ -11,7 +11,6 @@ export async function PUT(request, context) {
 
         const data = await request.json();
         
-        // Wait for params in case of Next.js 15+, or read directly from body
         let paramsId;
         try {
             const resolvedParams = await context.params;
@@ -42,7 +41,8 @@ export async function PUT(request, context) {
         }
 
         if (setupId) {
-            const setupObj = db.prepare('SELECT direction FROM trading_setups WHERE id = ?').get(setupId);
+            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1', [setupId]);
+            const setupObj = setupObjResult.rows[0];
             if (setupObj && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
                     error: `Conflicto de Dirección: El Setup seleccionado es exclusivamente para ${setupObj.direction}, pero intentas registrar una operación ${side.toUpperCase()}` 
@@ -63,25 +63,23 @@ export async function PUT(request, context) {
         }
         let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
 
-        const stmt = db.prepare(`
+        await pool.query(`
             UPDATE trading_operations SET
-                setupId = ?, 
-                date = ?, 
-                symbol = ?, 
-                side = ?, 
-                sesion = ?,
-                pnl = ?, 
-                riesgoAmount = ?, 
-                comision = ?,
-                resultR = ?, 
-                resultType = ?, 
-                notes = ?, 
-                imageUrl = ?,
-                contratos = ?
-            WHERE id = ?
-        `);
-
-        stmt.run(
+                "setupId" = $1, 
+                date = $2, 
+                symbol = $3, 
+                side = $4, 
+                sesion = $5,
+                pnl = $6, 
+                "riesgoAmount" = $7, 
+                comision = $8,
+                "resultR" = $9, 
+                "resultType" = $10, 
+                notes = $11, 
+                "imageUrl" = $12,
+                contratos = $13
+            WHERE id = $14
+        `, [
             setupId || null,
             date,
             symbol.toUpperCase(),
@@ -96,18 +94,17 @@ export async function PUT(request, context) {
             imageUrl || null,
             parsedContratos,
             id
-        );
+        ]);
 
-        // Obtener accountId de la operacion
-        const opData = db.prepare('SELECT accountId FROM trading_operations WHERE id = ?').get(id);
+        const opDataResult = await pool.query('SELECT "accountId" FROM trading_operations WHERE id = $1', [id]);
+        const opData = opDataResult.rows[0];
         
-        // Sincronizar comisiones
-        db.prepare('DELETE FROM trading_commissions WHERE operationId = ?').run(id);
+        await pool.query('DELETE FROM trading_commissions WHERE "operationId" = $1', [id]);
         if (parsedComision > 0 && opData) {
-            db.prepare(`
-                INSERT INTO trading_commissions (accountId, operationId, date, amount, description)
-                VALUES (?, ?, ?, ?, ?)
-            `).run(opData.accountId, id, date, parsedComision, 'Comisión actualizada');
+            await pool.query(`
+                INSERT INTO trading_commissions ("accountId", "operationId", date, amount, description)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [opData.accountId, id, date, parsedComision, 'Comisión actualizada']);
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
@@ -135,9 +132,8 @@ export async function DELETE(request, context) {
         const id = paramsId;
         if (!id) return NextResponse.json({ error: 'No se recibió el id de la operación para eliminar (ID es requerido)' }, { status: 400 });
 
-        // Eliminación manual en cascada para evitar huérfanos sin PRAGMA foreign_keys
-        db.prepare('DELETE FROM trading_commissions WHERE operationId = ?').run(id);
-        db.prepare('DELETE FROM trading_operations WHERE id = ?').run(id);
+        await pool.query('DELETE FROM trading_commissions WHERE "operationId" = $1', [id]);
+        await pool.query('DELETE FROM trading_operations WHERE id = $1', [id]);
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
