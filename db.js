@@ -11,6 +11,7 @@ async function initDB() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS trading_accounts (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         broker TEXT,
         type TEXT DEFAULT 'REAL',
@@ -24,6 +25,7 @@ async function initDB() {
       );
       CREATE TABLE IF NOT EXISTS trading_setups (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
         account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         description TEXT,
@@ -33,6 +35,7 @@ async function initDB() {
       );
       CREATE TABLE IF NOT EXISTS trading_operations (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
         account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
         setup_id INTEGER REFERENCES trading_setups(id),
         date TEXT NOT NULL,
@@ -51,6 +54,7 @@ async function initDB() {
       );
       CREATE TABLE IF NOT EXISTS trading_commissions (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
         account_id INTEGER REFERENCES trading_accounts(id) ON DELETE CASCADE,
         operation_id INTEGER REFERENCES trading_operations(id) ON DELETE CASCADE,
         date TEXT,
@@ -66,7 +70,7 @@ async function initDB() {
       );
       CREATE TABLE IF NOT EXISTS user_instruments (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER DEFAULT 1,
+        user_id INTEGER NOT NULL,
         category TEXT NOT NULL,
         ticker TEXT NOT NULL,
         name TEXT,
@@ -75,6 +79,18 @@ async function initDB() {
         UNIQUE(user_id, ticker)
       );
     `)
+
+    // Agregar columnas user_id si no existen (para tablas ya creadas)
+    const alterQueries = [
+      `ALTER TABLE trading_accounts ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE trading_setups ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE trading_operations ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE trading_commissions ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 0`,
+    ]
+    for (const q of alterQueries) {
+      try { await pool.query(q) } catch(e) {}
+    }
+
     console.log('PostgreSQL tablas inicializadas correctamente')
   } catch (error) {
     console.error('Error inicializando DB:', error.message)

@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
-import { getSession } from '@/lib/session';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { getUserFromToken } from '@/lib/getUser';
 
 export async function GET(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -24,9 +22,9 @@ export async function GET(request) {
             FROM trading_operations o
             LEFT JOIN trading_accounts a ON o.account_id = a.id
             LEFT JOIN trading_setups s ON o.setup_id = s.id
-            WHERE 1=1
+            WHERE o.user_id = $1
         `;
-        const params = [];
+        const params = [user.userId];
 
         if (accountId) {
             params.push(accountId);
@@ -53,25 +51,19 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const data = await request.json();
         console.log('DATA RECIBIDA:', data); // debug
         
-        const cookieStore = await cookies();
-        const token = cookieStore.get('journals_token');
-        if (token) {
-            const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025');
-            const plan = decoded.plan || 'free';
-
-            if (plan === 'free') {
-                const existing = await pool.query('SELECT COUNT(*) FROM trading_operations WHERE account_id = $1', [data.accountId]);
-                if (parseInt(existing.rows[0].count) >= 40) {
-                    return NextResponse.json({ error: 'Plan Free: límite de 40 operaciones alcanzado. Actualiza a Pro para operaciones ilimitadas.' }, { status: 403 });
-                }
+        const plan = user.plan || 'free';
+        if (plan === 'free') {
+            const existing = await pool.query('SELECT COUNT(*) FROM trading_operations WHERE user_id = $1', [user.userId]);
+            if (parseInt(existing.rows[0].count) >= 40) {
+                return NextResponse.json({ error: 'Plan Free: límite de 40 operaciones alcanzado. Actualiza a Pro para operaciones ilimitadas.' }, { status: 403 });
             }
         }
         
@@ -97,7 +89,7 @@ export async function POST(request) {
         }
 
         if (setupId) {
-            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1', [setupId]);
+            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1 AND user_id = $2', [setupId, user.userId]);
             const setupObj = setupObjResult.rows[0];
             if (setupObj && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
@@ -122,12 +114,13 @@ export async function POST(request) {
         }
         const result = await pool.query(`
             INSERT INTO trading_operations (
-                account_id, setup_id, date, symbol, side, sesion,
+                user_id, account_id, setup_id, date, symbol, side, sesion,
                 pnl, riesgo_amount, comision, result_r, result_type,
                 notes, image_url, contratos
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
             RETURNING id
         `, [
+            user.userId,
             accountId || null,
             setupId || null,
             date,
@@ -148,9 +141,9 @@ export async function POST(request) {
 
         if (parsedComision > 0) {
             await pool.query(`
-                INSERT INTO trading_commissions (account_id, operation_id, date, amount, description)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [accountId || null, opId, date, parsedComision, 'Comisión de operación']);
+                INSERT INTO trading_commissions (user_id, account_id, operation_id, date, amount, description)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [user.userId, accountId || null, opId, date, parsedComision, 'Comisión de operación']);
         }
 
         return NextResponse.json({ success: true, id: opId }, { status: 201 });

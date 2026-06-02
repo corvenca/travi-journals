@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
-import { getSession } from '@/lib/session';
+import { getUserFromToken } from '@/lib/getUser';
 
 export async function GET(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -19,9 +19,9 @@ export async function GET(request) {
             return NextResponse.json({ error: 'El accountId es requerido' }, { status: 400 });
         }
 
-        const accountInfoResult = await pool.query('SELECT initial_capital FROM trading_accounts WHERE id = $1', [accountId]);
+        const accountInfoResult = await pool.query('SELECT initial_capital FROM trading_accounts WHERE id = $1 AND user_id = $2', [accountId, user.userId]);
         const accountInfo = accountInfoResult.rows[0];
-        const initialCapital = accountInfo?.initialCapital || 0;
+        const initialCapital = accountInfo?.initial_capital || 0;
 
         let dateFilter = '';
         if (range && range.startsWith('RANGE_')) {
@@ -47,30 +47,30 @@ export async function GET(request) {
         const monthsQueryResult = await pool.query(`
           SELECT DISTINCT substring(date, 1, 7) as value,
           substring(date, 6, 2) || '/' || substring(date, 1, 4) as label
-          FROM trading_operations WHERE account_id = $1
+          FROM trading_operations WHERE account_id = $1 AND user_id = $2
           ORDER BY value DESC
-        `, [targetAccount]);
+        `, [targetAccount, user.userId]);
         const monthsQuery = monthsQueryResult.rows;
 
         const yearsQueryResult = await pool.query(`
           SELECT DISTINCT substring(date, 1, 4) as year
-          FROM trading_operations WHERE account_id = $1
+          FROM trading_operations WHERE account_id = $1 AND user_id = $2
           ORDER BY year DESC
-        `, [targetAccount]);
+        `, [targetAccount, user.userId]);
         const yearsQuery = yearsQueryResult.rows;
 
         const operationsResult = await pool.query(`
             SELECT id, date, pnl, comision, result_r, result_type, account_id, setup_id
             FROM trading_operations
-            WHERE account_id = $1 ${dateFilter}
+            WHERE account_id = $1 AND user_id = $2 ${dateFilter}
             ORDER BY date ASC
-        `, [targetAccount]);
+        `, [targetAccount, user.userId]);
         const operations = operationsResult.rows;
 
         const commsDbResult = await pool.query(`
             SELECT amount, date FROM trading_commissions
-            WHERE account_id = $1 ${dateFilter}
-        `, [targetAccount]);
+            WHERE account_id = $1 AND user_id = $2 ${dateFilter}
+        `, [targetAccount, user.userId]);
         const commsDb = commsDbResult.rows;
 
         const metrics = {
@@ -123,7 +123,7 @@ export async function GET(request) {
         });
 
         const setupsMap = {};
-        const allSetupsResult = await pool.query('SELECT id, name, direction FROM trading_setups');
+        const allSetupsResult = await pool.query('SELECT id, name, direction FROM trading_setups WHERE user_id = $1', [user.userId]);
         allSetupsResult.rows.forEach(s => {
             setupsMap[s.id] = {
                 id: s.id,

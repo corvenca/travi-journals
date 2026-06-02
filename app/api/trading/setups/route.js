@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
-import { getSession } from '@/lib/session';
+import { getUserFromToken } from '@/lib/getUser';
 
 export async function GET(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
-        const result = await pool.query('SELECT * FROM trading_setups ORDER BY id DESC');
+        const result = await pool.query('SELECT * FROM trading_setups WHERE user_id = $1 ORDER BY id DESC', [user.userId]);
         return NextResponse.json(result.rows);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -18,9 +18,9 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { name, description, color, direction } = await request.json();
@@ -30,9 +30,9 @@ export async function POST(request) {
         }
 
         const result = await pool.query(`
-            INSERT INTO trading_setups (name, description, color, direction)
-            VALUES ($1, $2, $3, $4) RETURNING id
-        `, [name, description || '', color || '#3b82f6', direction]);
+            INSERT INTO trading_setups (user_id, name, description, color, direction)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id
+        `, [user.userId, name, description || '', color || '#3b82f6', direction]);
 
         return NextResponse.json({ success: true, id: result.rows[0].id }, { status: 201 });
     } catch (error) {
@@ -42,9 +42,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -54,7 +54,7 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'Se requiere ID' }, { status: 400 });
         }
 
-        await pool.query('DELETE FROM trading_setups WHERE id = $1', [id]);
+        await pool.query('DELETE FROM trading_setups WHERE id = $1 AND user_id = $2', [id, user.userId]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {
@@ -64,9 +64,9 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { id, name, direction } = await request.json();
@@ -78,8 +78,8 @@ export async function PUT(request) {
         await pool.query(`
             UPDATE trading_setups 
             SET name = $1, direction = $2 
-            WHERE id = $3
-        `, [name, direction, id]);
+            WHERE id = $3 AND user_id = $4
+        `, [name, direction, id, user.userId]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {

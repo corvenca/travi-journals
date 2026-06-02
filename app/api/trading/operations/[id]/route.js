@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
-import { getSession } from '@/lib/session';
+import { getUserFromToken } from '@/lib/getUser';
 
 export async function PUT(request, context) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const data = await request.json();
@@ -43,7 +43,7 @@ export async function PUT(request, context) {
         }
 
         if (setupId) {
-            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1', [setupId]);
+            const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1 AND user_id = $2', [setupId, user.userId]);
             const setupObj = setupObjResult.rows[0];
             if (setupObj && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
@@ -78,7 +78,7 @@ export async function PUT(request, context) {
                 notes = $11, 
                 image_url = $12,
                 contratos = $13
-            WHERE id = $14
+            WHERE id = $14 AND user_id = $15
         `, [
             setupId || null,
             date,
@@ -93,18 +93,19 @@ export async function PUT(request, context) {
             notes || null,
             imageUrl || null,
             parsedContratos,
-            id
+            id,
+            user.userId
         ]);
 
-        const opDataResult = await pool.query('SELECT account_id FROM trading_operations WHERE id = $1', [id]);
+        const opDataResult = await pool.query('SELECT account_id FROM trading_operations WHERE id = $1 AND user_id = $2', [id, user.userId]);
         const opData = opDataResult.rows[0];
         
-        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1', [id]);
+        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1 AND user_id = $2', [id, user.userId]);
         if (parsedComision > 0 && opData) {
             await pool.query(`
-                INSERT INTO trading_commissions (account_id, operation_id, date, amount, description)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [opData.account_id, id, date, parsedComision, 'Comisión actualizada']);
+                INSERT INTO trading_commissions (user_id, account_id, operation_id, date, amount, description)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [user.userId, opData.account_id, id, date, parsedComision, 'Comisión actualizada']);
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
@@ -116,9 +117,9 @@ export async function PUT(request, context) {
 
 export async function DELETE(request, context) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         let paramsId;
@@ -132,8 +133,8 @@ export async function DELETE(request, context) {
         const id = paramsId;
         if (!id) return NextResponse.json({ error: 'No se recibió el id de la operación para eliminar (ID es requerido)' }, { status: 400 });
 
-        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1', [id]);
-        await pool.query('DELETE FROM trading_operations WHERE id = $1', [id]);
+        await pool.query('DELETE FROM trading_commissions WHERE operation_id = $1 AND user_id = $2', [id, user.userId]);
+        await pool.query('DELETE FROM trading_operations WHERE id = $1 AND user_id = $2', [id, user.userId]);
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {

@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/db';
-import { getSession } from '@/lib/session';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { getUserFromToken } from '@/lib/getUser';
 
 export async function GET(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado: Solo ADMIN' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const result = await pool.query(`
@@ -17,8 +15,9 @@ export async function GET(request) {
                 (SELECT COUNT(*) FROM trading_operations o WHERE o.account_id = a.id) as operationsCount,
                 (SELECT SUM(pnl) FROM trading_operations o WHERE o.account_id = a.id) as totalPnl
             FROM trading_accounts a
+            WHERE a.user_id = $1
             ORDER BY a.id DESC
-        `);
+        `, [user.userId]);
 
         return NextResponse.json(result.rows);
     } catch (error) {
@@ -29,9 +28,9 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado: Solo ADMIN' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const data = await request.json();
@@ -41,27 +40,21 @@ export async function POST(request) {
             return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
         }
 
-        console.log('Intentando crear cuenta:', data)
+        console.log('Intentando crear cuenta para usuario:', user.userId, data);
 
-        const cookieStore = await cookies();
-        const token = cookieStore.get('journals_token');
-        if (token) {
-            const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025');
-            const plan = decoded.plan || 'free';
-
-            if (plan === 'free') {
-                // Ignore user_id since it's not in the DB, just count total accounts
-                const existing = await pool.query('SELECT COUNT(*) FROM trading_accounts');
-                if (parseInt(existing.rows[0].count) >= 1) {
-                    return NextResponse.json({ error: 'Plan Free: solo puedes tener 1 cuenta. Actualiza a Pro para cuentas ilimitadas.' }, { status: 403 });
-                }
+        const plan = user.plan || 'free';
+        if (plan === 'free') {
+            const existing = await pool.query('SELECT COUNT(*) FROM trading_accounts WHERE user_id = $1', [user.userId]);
+            if (parseInt(existing.rows[0].count) >= 1) {
+                return NextResponse.json({ error: 'Plan Free: solo puedes tener 1 cuenta. Actualiza a Pro para cuentas ilimitadas.' }, { status: 403 });
             }
         }
 
         const result = await pool.query(`
-            INSERT INTO trading_accounts (name, broker, type, initial_capital, risk_percent, trader_name, trader_email, trader_address, account_number)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
+            INSERT INTO trading_accounts (user_id, name, broker, type, initial_capital, risk_percent, trader_name, trader_email, trader_address, account_number)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
         `, [
+            user.userId,
             name,
             broker || null,
             type || 'REAL',
@@ -85,9 +78,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado: Solo ADMIN' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -97,7 +90,7 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'El ID es obligatorio' }, { status: 400 });
         }
 
-        await pool.query('DELETE FROM trading_accounts WHERE id = $1', [id]);
+        await pool.query('DELETE FROM trading_accounts WHERE id = $1 AND user_id = $2', [id, user.userId]);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {
@@ -108,9 +101,9 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
     try {
-        const session = await getSession();
-        if (!session || session.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'No Autorizado: Solo ADMIN' }, { status: 403 });
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
         const data = await request.json();
@@ -131,7 +124,7 @@ export async function PUT(request) {
                 trader_email = $7,
                 trader_address = $8,
                 account_number = $9
-            WHERE id = $10
+            WHERE id = $10 AND user_id = $11
         `, [
             name,
             broker || null,
@@ -142,7 +135,8 @@ export async function PUT(request) {
             traderEmail || null,
             traderAddress || null,
             accountNumber || null,
-            id
+            id,
+            user.userId
         ]);
 
         return NextResponse.json({ success: true, id });
