@@ -37,7 +37,14 @@ export async function GET(request) {
         query += ` ORDER BY o.date DESC, o.id DESC LIMIT $${params.length}`;
 
         const result = await pool.query(query, params);
-        return NextResponse.json(result.rows);
+        const mappedRows = result.rows.map(row => ({
+            ...row,
+            riesgoAmount: row.riesgo_amount !== undefined ? row.riesgo_amount : row.riesgoAmount,
+            resultR: row.result_r !== undefined ? row.result_r : row.resultR,
+            resultType: row.result_type !== undefined ? row.result_type : row.resultType,
+            imageUrl: row.image_url !== undefined ? row.image_url : row.imageUrl
+        }));
+        return NextResponse.json(mappedRows);
     } catch (error) {
         console.error("GET Operations:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -70,19 +77,22 @@ export async function POST(request) {
         
         const {
             accountId, date, symbol, side, sesion, setupId,
-            pnl = 0, riesgo = 0, comision = 0, notes, imageUrl, contratos, resultType: inputResultType, tipoResultado
+            pnl, riesgo, riesgoAmount, riesgo_amount,
+            comision, notes, imageUrl, contratos,
+            resultType: inputResultType, tipoResultado
         } = data;
 
-        const parsedPnl = parseFloat(pnl);
-        const parsedRiesgo = parseFloat(riesgo);
+        const parsedPnl = parseFloat(pnl) || 0;
+        const parsedRiesgo = parseFloat(riesgo || riesgoAmount || riesgo_amount) || 0;
         const parsedComision = parseFloat(comision) || 0;
-        const parsedContratos = parseInt(contratos, 10);
+        const parsedContratos = parseInt(contratos, 10) || 1;
+        const parsedRR = parsedRiesgo > 0 ? parsedPnl / parsedRiesgo : 0;
 
-        if (!date || !symbol || !side || isNaN(parsedRiesgo) || parsedRiesgo <= 0) {
+        if (!date || !symbol || !side || parsedRiesgo <= 0) {
             return NextResponse.json({ error: 'Fecha, Símbolo, Dirección y Riesgo (>0) son obligatorios' }, { status: 400 });
         }
 
-        if (isNaN(parsedContratos) || parsedContratos < 1) {
+        if (parsedContratos < 1) {
             return NextResponse.json({ error: 'Introduce una cantidad válida de contratos.' }, { status: 400 });
         }
 
@@ -110,24 +120,24 @@ export async function POST(request) {
         } else {
             finalResultType = parsedPnl > 0 ? 'GANADA' : parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN';
         }
-        let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
-
         const result = await pool.query(`
             INSERT INTO trading_operations (
                 account_id, setup_id, date, symbol, side, sesion,
-                pnl, riesgo_amount, comision, result_r, result_type, notes, image_url, contratos
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id
+                pnl, riesgo_amount, comision, result_r, result_type,
+                notes, image_url, contratos
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+            RETURNING id
         `, [
             accountId || null,
             setupId || null,
             date,
-            symbol.toUpperCase(),
-            side.toUpperCase(),
+            symbol?.toUpperCase(),
+            side?.toUpperCase(),
             sesion || null,
             parsedPnl,
             parsedRiesgo,
             parsedComision,
-            rr,
+            parsedRR,
             finalResultType,
             notes || null,
             imageUrl || null,

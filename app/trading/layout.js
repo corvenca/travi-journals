@@ -1,3 +1,4 @@
+'use client';
 import Sidebar from '@/components/Sidebar'
 import MarketTicker from '@/components/MarketTicker'
 

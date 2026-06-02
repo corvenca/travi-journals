@@ -67,13 +67,14 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 />
             )}
             <aside className={`${styles.sidebar} ${isReports ? styles.mobileSidebar : ''} ${isMobileMenuOpen ? styles.open : ''}`}>
-                <div className={styles.logo}>
-                <Replace size={28} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>travi<span style={{color: '#1D9E75'}}>trade</span></span>
-                    <span style={{ fontSize: '0.65rem', color: '#9FE1CB', letterSpacing: '0.1em', marginTop: '-4px' }}>JOURNALS · V1.0</span>
+                <div className={styles.logo} style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '2rem' }}>
+                      <img
+                        src="/logo.png"
+                        alt="Travitrade"
+                        style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
+                        onError={(e) => { e.target.style.display = 'none' }}
+                      />
                 </div>
-            </div>
             <nav className={styles.nav}>
                 {!pathname.startsWith('/trading') && visibleNavItems.map((item) => {
                     const Icon = item.icon;

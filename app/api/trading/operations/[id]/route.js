@@ -24,19 +24,21 @@ export async function PUT(request, context) {
 
         const {
             date, symbol, side, sesion, setupId,
-            pnl = 0, riesgo = 0, comision = 0, notes, imageUrl, contratos
+            pnl, riesgo, riesgoAmount, riesgo_amount,
+            comision, notes, imageUrl, contratos
         } = data;
 
-        const parsedPnl = parseFloat(pnl);
-        const parsedRiesgo = parseFloat(riesgo);
+        const parsedPnl = parseFloat(pnl) || 0;
+        const parsedRiesgo = parseFloat(riesgo || riesgoAmount || riesgo_amount) || 0;
         const parsedComision = parseFloat(comision) || 0;
-        const parsedContratos = parseInt(contratos, 10);
+        const parsedContratos = parseInt(contratos, 10) || 1;
+        const parsedRR = parsedRiesgo > 0 ? parsedPnl / parsedRiesgo : 0;
 
-        if (!date || !symbol || !side || isNaN(parsedRiesgo) || parsedRiesgo <= 0) {
+        if (!date || !symbol || !side || parsedRiesgo <= 0) {
             return NextResponse.json({ error: 'Fecha, Símbolo, Dirección y Riesgo (>0) son obligatorios' }, { status: 400 });
         }
 
-        if (isNaN(parsedContratos) || parsedContratos < 1) {
+        if (parsedContratos < 1) {
             return NextResponse.json({ error: 'Introduce una cantidad válida de contratos.' }, { status: 400 });
         }
 
@@ -61,8 +63,6 @@ export async function PUT(request, context) {
         } else {
             finalResultType = parsedPnl > 0 ? 'GANADA' : (parsedPnl < 0 ? 'PERDIDA' : 'BREAK_EVEN');
         }
-        let rr = parsedRiesgo > 0 ? (parsedPnl / parsedRiesgo) : 0;
-
         await pool.query(`
             UPDATE trading_operations SET
                 setup_id = $1, 
@@ -82,13 +82,13 @@ export async function PUT(request, context) {
         `, [
             setupId || null,
             date,
-            symbol.toUpperCase(),
-            side.toUpperCase(),
+            symbol?.toUpperCase(),
+            side?.toUpperCase(),
             sesion || null,
             parsedPnl,
             parsedRiesgo,
             parsedComision,
-            rr,
+            parsedRR,
             finalResultType,
             notes || null,
             imageUrl || null,

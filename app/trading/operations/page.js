@@ -119,7 +119,7 @@ export default function TradingOperationsLog() {
             sesion: op.sesion || '09:30',
             setupId: op.setupId || '',
             pnl: op.pnl ?? '',
-            riesgo: op.riesgoAmount ?? (op.riskPercent ?? ''), // Compatibility fallback
+            riesgo: op.riesgoAmount ?? op.riesgo_amount ?? (op.riskPercent ?? ''), // Compatibility fallback
             comision: op.comision ?? '',
             contratos: op.contratos ?? '',
             notes: op.notes || '',
@@ -153,19 +153,19 @@ export default function TradingOperationsLog() {
         try {
             const submitData = {
                 id: isEditing ? editId : undefined,
-                accountId: activeAccount.id,
+                accountId: formData.accountId || activeAccount?.id,
+                setupId: formData.setupId || null,
                 date: formData.date,
                 symbol: formData.symbol,
                 side: formData.side,
                 sesion: formData.sesion,
-                setupId: formData.setupId,
-                pnl: parseFloat(formData.pnl),
-                riesgo: parseFloat(formData.riesgo),
+                pnl: parseFloat(formData.pnl) || 0,
+                riesgo: parseFloat(formData.riesgo) || parseFloat(formData.riesgoAmount) || 0,
                 comision: parseFloat(formData.comision) || 0,
-                contratos: parseInt(formData.contratos, 10),
-                notes: formData.notes,
-                imageUrl: formData.imageUrl,
+                contratos: parseInt(formData.contratos, 10) || 1,
                 resultType: resultType,
+                notes: formData.notes || '',
+                imageUrl: formData.imageUrl,
             };
 
             const url = isEditing ? `/api/trading/operations/${editId}` : '/api/trading/operations';
@@ -261,8 +261,8 @@ export default function TradingOperationsLog() {
                                 <span>•</span>
                                 <span className={`${styles.badge}`}>Contratos: {op.contratos ?? '-'}</span>
                             </div>
-                            {op.imageUrl && (
-                                <a href={op.imageUrl} target="_blank" rel="noopener noreferrer" className={styles.cardLink}>
+                            {(op.imageUrl || op.image_url) && (
+                                <a href={op.imageUrl || op.image_url} target="_blank" rel="noopener noreferrer" className={styles.cardLink}>
                                     <LinkIcon size={14} /> Ver imagen
                                 </a>
                             )}
@@ -274,19 +274,16 @@ export default function TradingOperationsLog() {
                                 {op.pnl >= 0 ? '+' : ''}${Math.abs(op.pnl).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </div>
                             <div className={styles.cardRisk}>
-                                Riesgo: ${(op.riesgoAmount || Number(op.riskPercent)).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                Riesgo: ${(op.riesgoAmount ?? op.riesgo_amount ?? Number(op.riskPercent ?? 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </div>
                             {op.comision > 0 && (
                                 <div className={styles.cardRisk} style={{ color: '#ef4444', marginTop: '2px' }}>
                                     Comisión: -${op.comision.toFixed(2)}
                                 </div>
                             )}
-                            <div className={styles.cardRisk}>
-                                Riesgo: ${(op.riesgoAmount || Number(op.riskPercent)).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                            </div>
                             <div className={styles.cardBadgeBox}>
-                                <div className={`${styles.rrBox} ${op.resultR > 0 ? styles.positive : op.resultR < 0 ? styles.negative : ''}`}>
-                                    {op.resultR > 0 ? '+' : ''}{Number(op.resultR).toFixed(2)}R
+                                <div className={`${styles.rrBox} ${(op.resultR ?? op.result_r ?? 0) > 0 ? styles.positive : (op.resultR ?? op.result_r ?? 0) < 0 ? styles.negative : ''}`}>
+                                    {(op.resultR ?? op.result_r ?? 0) > 0 ? '+' : ''}{Number(op.resultR ?? op.result_r ?? 0).toFixed(2)}R
                                 </div>
                             </div>
                         </div>
@@ -497,10 +494,10 @@ export default function TradingOperationsLog() {
                                 <div><strong>Fecha:</strong> {selectedOp.date}</div>
                                 <div><strong>Sesión:</strong> {selectedOp.sesion || '-'}</div>
                                 <div><strong>Setup:</strong> {selectedOp.setupName || 'Ninguno'}</div>
-                                <div><strong>Riesgo ($):</strong> ${selectedOp.riesgoAmount || 0}</div>
+                                <div><strong>Riesgo ($):</strong> ${selectedOp.riesgoAmount ?? selectedOp.riesgo_amount ?? 0}</div>
                                 <div><strong>Comisión:</strong> ${selectedOp.comision || 0}</div>
                                 <div><strong>P&L:</strong> ${selectedOp.pnl}</div>
-                                <div><strong>R:R:</strong> {selectedOp.resultR}R</div>
+                                <div><strong>R:R:</strong> {selectedOp.resultR ?? selectedOp.result_r ?? 0}R</div>
                                 <div><strong>Contratos:</strong> {selectedOp.contratos ?? '-'}</div>
                             </div>
                             <div className={styles.formGroup} style={{marginTop: '1rem'}}>
@@ -509,10 +506,10 @@ export default function TradingOperationsLog() {
                                     {selectedOp.notes || 'Sin notas registradas.'}
                                 </p>
                             </div>
-                            {selectedOp.imageUrl && (
+                             {(selectedOp.imageUrl || selectedOp.image_url) && (
                                 <div className={styles.formGroup}>
                                     <strong>Enlace de Captura:</strong>
-                                    <a href={selectedOp.imageUrl} target="_blank" rel="noopener noreferrer" style={{color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem'}}>
+                                    <a href={selectedOp.imageUrl || selectedOp.image_url} target="_blank" rel="noopener noreferrer" style={{color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem'}}>
                                         <LinkIcon size={18} /> Abrir imagen en una nueva pestaña (TradingView)
                                     </a>
                                 </div>
