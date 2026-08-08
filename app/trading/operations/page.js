@@ -28,6 +28,37 @@ export default function TradingOperationsLog() {
     const [editId, setEditId] = useState(null);
     
     const [resultType, setResultType] = useState('');
+    const [highlightedDate, setHighlightedDate] = useState(null);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            if (dateParam) {
+                setHighlightedDate(dateParam);
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (highlightedDate && operations.length > 0) {
+            const matchingOp = operations.find(op => op.date === highlightedDate);
+            if (matchingOp) {
+                setTimeout(() => {
+                    const element = document.getElementById(`op-${matchingOp.id}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 200);
+            }
+            const timer = setTimeout(() => {
+                setHighlightedDate(null);
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightedDate, operations]);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -238,7 +269,7 @@ export default function TradingOperationsLog() {
                         No hay operaciones registradas.
                     </div>
                 ) : operations.map(op => (
-                    <div key={op.id} className={styles.opCard}>
+                    <div key={op.id} id={`op-${op.id}`} className={`${styles.opCard} ${op.date === highlightedDate ? styles.highlightedCard : ''}`}>
                         
                         {/* IZQUIERDA: Icono Arrow */}
                         <div className={`${styles.cardIcon} ${op.side === 'LONG' ? styles.long : styles.short}`}>

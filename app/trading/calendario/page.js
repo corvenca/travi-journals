@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useActiveAccount } from '@/components/trading/AccountContext'
 import styles from './page.module.css'
 
@@ -11,6 +12,7 @@ const currentRealYear = new Date().getFullYear()
 const years = [currentRealYear - 1, currentRealYear, currentRealYear + 1]
 
 export default function CalendarioPage() {
+  const router = useRouter()
   const { activeAccount, isLoaded } = useActiveAccount()
   const today = new Date()
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
@@ -105,7 +107,14 @@ export default function CalendarioPage() {
             return (
               <div key={day}
                 className={`${styles.day} ${data?(data.totalPnl>0?styles.win:data.totalPnl<0?styles.loss:styles.be):''} ${isToday?styles.today:''} ${isSel?styles.sel:''}`}
-                onClick={()=>setSelectedDay(isSel?null:day)}>
+                onClick={() => {
+                  if (data) {
+                    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                    router.push(`/trading/operations?date=${dateStr}`);
+                  } else {
+                    setSelectedDay(isSel?null:day);
+                  }
+                }}>
                 <div className={styles.dn}>{day}</div>
                 {data && <>
                   <div className={styles.dpnl} style={{color:data.totalPnl>=0?'#1D9E75':'#E24B4A'}}>{data.totalPnl>=0?'+':''}${Math.abs(data.totalPnl).toFixed(0)}</div>

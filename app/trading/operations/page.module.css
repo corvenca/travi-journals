@@ -355,3 +355,20 @@
     border: 1px solid var(--border-color);
     margin-top: 1rem;
 }
+
+.highlightedCard {
+    animation: pulseHighlight 3s ease-out;
+    border-color: #00d4aa !important;
+}
+
+@keyframes pulseHighlight {
+    0% {
+        box-shadow: 0 0 25px rgba(0, 212, 170, 0.6);
+        background-color: rgba(0, 212, 170, 0.1);
+    }
+    100% {
+        box-shadow: 0 0 0px rgba(0, 212, 170, 0);
+        background-color: var(--bg-secondary);
+    }
+}
+
