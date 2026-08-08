@@ -40,7 +40,12 @@ export async function GET(request) {
             riesgoAmount: row.riesgo_amount !== undefined ? row.riesgo_amount : row.riesgoAmount,
             resultR: row.result_r !== undefined ? row.result_r : row.resultR,
             resultType: row.result_type !== undefined ? row.result_type : row.resultType,
-            imageUrl: row.image_url !== undefined ? row.image_url : row.imageUrl
+            imageUrl: row.image_url !== undefined ? row.image_url : row.imageUrl,
+            setupId: row.setup_id !== undefined ? row.setup_id : row.setupId,
+            accountId: row.account_id !== undefined ? row.account_id : row.accountId,
+            setupName: row.setupname !== undefined ? row.setupname : row.setupName,
+            setupColor: row.setupcolor !== undefined ? row.setupcolor : row.setupColor,
+            accountName: row.accountname !== undefined ? row.accountname : row.accountName
         }));
         return NextResponse.json(mappedRows);
     } catch (error) {
@@ -91,7 +96,7 @@ export async function POST(request) {
         if (setupId) {
             const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1 AND user_id = $2', [setupId, user.userId]);
             const setupObj = setupObjResult.rows[0];
-            if (setupObj && setupObj.direction !== side.toUpperCase()) {
+            if (setupObj && setupObj.direction !== 'BOTH' && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
                     error: `Conflicto de Dirección: El Setup seleccionado es exclusivamente para ${setupObj.direction}, pero intentas registrar una operación ${side.toUpperCase()}` 
                 }, { status: 400 });

@@ -9,7 +9,10 @@ export async function GET(request) {
             return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
-        const result = await pool.query('SELECT * FROM trading_setups WHERE user_id = $1 ORDER BY id DESC', [user.userId]);
+        const result = await pool.query(
+            'SELECT * FROM trading_setups WHERE user_id = $1 ORDER BY name ASC',
+            [user.userId]
+        );
         return NextResponse.json(result.rows);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -19,7 +19,19 @@ export async function GET(request) {
             ORDER BY a.id DESC
         `, [user.userId]);
 
-        return NextResponse.json(result.rows);
+        const mappedRows = result.rows.map(row => ({
+            ...row,
+            initialCapital: row.initial_capital !== undefined ? row.initial_capital : row.initialCapital,
+            riskPercent: row.risk_percent !== undefined ? row.risk_percent : row.riskPercent,
+            traderName: row.trader_name !== undefined ? row.trader_name : row.traderName,
+            traderEmail: row.trader_email !== undefined ? row.trader_email : row.traderEmail,
+            traderAddress: row.trader_address !== undefined ? row.trader_address : row.traderAddress,
+            accountNumber: row.account_number !== undefined ? row.account_number : row.accountNumber,
+            operationsCount: row.operationscount !== undefined ? parseInt(row.operationscount, 10) : row.operationsCount,
+            totalPnl: row.totalpnl !== undefined ? parseFloat(row.totalpnl) : row.totalPnl,
+        }));
+
+        return NextResponse.json(mappedRows);
     } catch (error) {
         console.error("GET Trading Accounts Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

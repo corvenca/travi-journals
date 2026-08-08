@@ -46,7 +46,7 @@ export async function GET(request) {
 
         const accountInfoResult = await pool.query('SELECT initial_capital FROM trading_accounts WHERE id = $1', [accountId]);
         const accountInfo = accountInfoResult.rows[0];
-        const initialCapital = accountInfo?.initialCapital || 0;
+        const initialCapital = accountInfo?.initial_capital || 0;
 
         let dateFilter = '';
         const params = [accountId];
@@ -66,7 +66,15 @@ export async function GET(request) {
             WHERE account_id = $1 ${dateFilter}
             ORDER BY date ASC
         `, params);
-        const operations = operationsResult.rows;
+        const operations = operationsResult.rows.map(row => ({
+            ...row,
+            resultR: row.result_r !== undefined ? row.result_r : row.resultR,
+            resultType: row.result_type !== undefined ? row.result_type : row.resultType,
+            setupId: row.setup_id !== undefined ? row.setup_id : row.setupId,
+            accountId: row.account_id !== undefined ? row.account_id : row.accountId,
+            riesgoAmount: row.riesgo_amount !== undefined ? row.riesgo_amount : row.riesgoAmount,
+            imageUrl: row.image_url !== undefined ? row.image_url : row.imageUrl
+        }));
 
         const commsDbResult = await pool.query(`
             SELECT amount FROM trading_commissions

@@ -78,7 +78,8 @@ export default function TradingOperationsLog() {
 
     const fetchSetups = async () => {
         try {
-            const res = await fetch(`/api/trading/setups`);
+            const accountId = activeAccount?.id;
+            const res = await fetch(`/api/trading/setups${accountId ? `?accountId=${accountId}` : ''}`);
             if (res.ok) {
                 const data = await res.json();
                 setSetups(data);
@@ -154,7 +155,7 @@ export default function TradingOperationsLog() {
             const submitData = {
                 id: isEditing ? editId : undefined,
                 accountId: formData.accountId || activeAccount?.id,
-                setupId: formData.setupId || null,
+                setupId: formData.setupId ? parseInt(formData.setupId, 10) : null,
                 date: formData.date,
                 symbol: formData.symbol,
                 side: formData.side,
@@ -347,7 +348,7 @@ export default function TradingOperationsLog() {
                                         <select value={formData.setupId} onChange={e => setFormData({...formData, setupId: e.target.value})}>
                                             <option value="">Seleccionar setup</option>
                                             {setups
-                                                .filter(s => !formData.side || s.direction === formData.side)
+                                                .filter(s => !formData.side || s.direction === formData.side || s.direction === 'BOTH')
                                                 .map(s => <option key={s.id} value={s.id}>{s.name} ({s.direction})</option>)
                                             }
                                         </select>

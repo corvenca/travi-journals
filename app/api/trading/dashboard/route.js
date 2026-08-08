@@ -65,7 +65,16 @@ export async function GET(request) {
             WHERE account_id = $1 AND user_id = $2 ${dateFilter}
             ORDER BY date ASC
         `, [targetAccount, user.userId]);
-        const operations = operationsResult.rows;
+        const operations = operationsResult.rows.map(row => ({
+            ...row,
+            resultR: row.result_r !== undefined ? row.result_r : row.resultR,
+            resultType: row.result_type !== undefined ? row.result_type : row.resultType,
+            setupId: row.setup_id !== undefined ? row.setup_id : row.setupId,
+            accountId: row.account_id !== undefined ? row.account_id : row.accountId,
+            setup_id: row.setup_id,
+            result_r: row.result_r,
+            result_type: row.result_type
+        }));
 
         const commsDbResult = await pool.query(`
             SELECT amount, date FROM trading_commissions
@@ -123,8 +132,11 @@ export async function GET(request) {
         });
 
         const setupsMap = {};
-        const allSetupsResult = await pool.query('SELECT id, name, direction FROM trading_setups WHERE user_id = $1', [user.userId]);
-        allSetupsResult.rows.forEach(s => {
+        const allSetups = await pool.query(
+            'SELECT id, name, direction FROM trading_setups WHERE user_id = $1',
+            [user.userId]
+        );
+        allSetups.rows.forEach(s => {
             setupsMap[s.id] = {
                 id: s.id,
                 name: s.name,
@@ -199,8 +211,8 @@ export async function GET(request) {
             if (!groupedPnls[curveGroupingKey]) groupedPnls[curveGroupingKey] = 0;
             groupedPnls[curveGroupingKey] += net;
 
-            if (op.setupId && setupsMap[op.setupId]) {
-                const s = setupsMap[op.setupId];
+            if (op.setup_id && setupsMap[op.setup_id]) {
+                const s = setupsMap[op.setup_id];
                 s.trades++;
                 s.totalPnl += gross;
                 s.totalCommissions += comRef;

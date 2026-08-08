@@ -45,7 +45,7 @@ export async function PUT(request, context) {
         if (setupId) {
             const setupObjResult = await pool.query('SELECT direction FROM trading_setups WHERE id = $1 AND user_id = $2', [setupId, user.userId]);
             const setupObj = setupObjResult.rows[0];
-            if (setupObj && setupObj.direction !== side.toUpperCase()) {
+            if (setupObj && setupObj.direction !== 'BOTH' && setupObj.direction !== side.toUpperCase()) {
                 return NextResponse.json({ 
                     error: `Conflicto de Dirección: El Setup seleccionado es exclusivamente para ${setupObj.direction}, pero intentas registrar una operación ${side.toUpperCase()}` 
                 }, { status: 400 });
