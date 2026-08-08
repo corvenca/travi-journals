@@ -21,7 +21,15 @@ export async function GET(request) {
       WHERE account_id = $1 AND substring(date, 1, 7) = $2
       GROUP BY date ORDER BY date ASC
     `, [parseInt(accountId, 10), monthStr])
-    return NextResponse.json({ dailyData: result.rows, month, year })
+    const mappedRows = result.rows.map(row => ({
+        ...row,
+        totalOps: parseInt(row.totalOps || '0', 10),
+        totalPnl: parseFloat(row.totalPnl || '0'),
+        wins: parseInt(row.wins || '0', 10),
+        losses: parseInt(row.losses || '0', 10),
+        breakEvens: parseInt(row.breakEvens || '0', 10),
+    }));
+    return NextResponse.json({ dailyData: mappedRows, month, year })
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

@@ -39,7 +39,7 @@ export default function CalendarioPage() {
   const totalPnl = dailyData.reduce((s,d) => s+(d.totalPnl||0), 0)
   const winDays = dailyData.filter(d => d.totalPnl > 0).length
   const lossDays = dailyData.filter(d => d.totalPnl < 0).length
-  const totalOps = dailyData.reduce((s,d) => s+(d.totalOps||0), 0)
+  const totalOps = dailyData.reduce((s,d) => s+Number(d.totalOps||0), 0)
 
   if (!isLoaded) return null
 
@@ -107,14 +107,7 @@ export default function CalendarioPage() {
             return (
               <div key={day}
                 className={`${styles.day} ${data?(data.totalPnl>0?styles.win:data.totalPnl<0?styles.loss:styles.be):''} ${isToday?styles.today:''} ${isSel?styles.sel:''}`}
-                onClick={() => {
-                  if (data) {
-                    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                    router.push(`/trading/operations?date=${dateStr}`);
-                  } else {
-                    setSelectedDay(isSel?null:day);
-                  }
-                }}>
+                onClick={()=>setSelectedDay(isSel?null:day)}>
                 <div className={styles.dn}>{day}</div>
                 {data && <>
                   <div className={styles.dpnl} style={{color:data.totalPnl>=0?'#1D9E75':'#E24B4A'}}>{data.totalPnl>=0?'+':''}${Math.abs(data.totalPnl).toFixed(0)}</div>
@@ -127,7 +120,19 @@ export default function CalendarioPage() {
 
         {selectedDay && getDayData(selectedDay) && (
           <div className={styles.detail}>
-            <h3 className={styles.detailTitle}>{selectedDay} de {MONTHS[currentMonth-1]}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 className={styles.detailTitle} style={{ margin: 0 }}>{selectedDay} de {MONTHS[currentMonth-1]}</h3>
+              <button 
+                type="button" 
+                onClick={() => {
+                  const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}`;
+                  router.push(`/trading/operations?date=${dateStr}`);
+                }}
+                className={styles.viewOpsBtn}
+              >
+                Ver operaciones en Bitácora →
+              </button>
+            </div>
             <div className={styles.detailGrid}>
               <div><span className={styles.dlbl}>OPERACIONES</span><span className={styles.dval}>{getDayData(selectedDay).totalOps}</span></div>
               <div><span className={styles.dlbl}>PNL TOTAL</span><span className={styles.dval} style={{color:getDayData(selectedDay).totalPnl>=0?'#1D9E75':'#E24B4A'}}>{getDayData(selectedDay).totalPnl>=0?'+':''}${getDayData(selectedDay).totalPnl?.toFixed(2)}</span></div>
