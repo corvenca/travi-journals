@@ -43,49 +43,44 @@ export async function POST(request) {
     }
 }
 
-export async function DELETE(request) {
-    try {
-        const user = await getUserFromToken();
-        if (!user) {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
-        }
+export async function PUT(request) {
+  try {
+    const user = await getUserFromToken()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { id, name, direction, color, description } = await request.json()
+    if (!id || !name || !direction) return NextResponse.json({ error: 'Faltan campos' }, { status: 400 })
 
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ error: 'Se requiere ID' }, { status: 400 });
-        }
-
-        await pool.query('DELETE FROM trading_setups WHERE id = $1 AND user_id = $2', [id, user.userId]);
-
-        return NextResponse.json({ success: true, id });
-    } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    await pool.query(
+      'UPDATE trading_setups SET name = $1, direction = $2, color = $3, description = $4 WHERE id = $5 AND user_id = $6',
+      [name, direction, color || '#1D9E75', description || '', id, user.userId]
+    )
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
-export async function PUT(request) {
-    try {
-        const user = await getUserFromToken();
-        if (!user) {
-            return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
-        }
+export async function DELETE(request) {
+  try {
+    const user = await getUserFromToken()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
 
-        const { id, name, direction } = await request.json();
+    // Primero desasociar operaciones — no eliminarlas
+    await pool.query(
+      'UPDATE trading_operations SET setup_id = NULL WHERE setup_id = $1 AND user_id = $2',
+      [id, user.userId]
+    )
 
-        if (!id || !name || !direction) {
-            return NextResponse.json({ error: 'ID, nombre y dirección son obligatorios' }, { status: 400 });
-        }
-
-        await pool.query(`
-            UPDATE trading_setups 
-            SET name = $1, direction = $2 
-            WHERE id = $3 AND user_id = $4
-        `, [name, direction, id, user.userId]);
-
-        return NextResponse.json({ success: true, id });
-    } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    // Luego eliminar el setup
+    await pool.query(
+      'DELETE FROM trading_setups WHERE id = $1 AND user_id = $2',
+      [id, user.userId]
+    )
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }

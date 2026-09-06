@@ -150,6 +150,16 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                             <BarChart2 size={20} /> Operaciones
                         </Link>
 
+                        <Link href="/trading/setups" className={`${styles.navItem} ${pathname.startsWith('/trading/setups') ? styles.active : ''}`}>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                            <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                          </svg>
+                          Setups
+                        </Link>
+
                         {plan === 'free' ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(159,225,203,0.3)', fontSize: '13px', cursor: 'not-allowed', position: 'relative' }}
                             title="Disponible en Plan Pro">
