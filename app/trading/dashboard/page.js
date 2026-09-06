@@ -55,6 +55,18 @@ export default function TradingDashboard() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [showSetupModal, setShowSetupModal] = useState(false);
+    const [analysis, setAnalysis] = useState(null);
+    const [analysisFilter, setAnalysisFilter] = useState('all');
+    const [analysisFilterValue, setAnalysisFilterValue] = useState('');
+    const [sideFilter, setSideFilter] = useState('ALL');
+
+    useEffect(() => {
+      if (!activeAccount) return;
+      fetch(`/api/trading/analysis?accountId=${activeAccount.id}&filterType=${analysisFilter}&filterValue=${analysisFilterValue}`)
+        .then(r => r.json())
+        .then(data => setAnalysis(data))
+        .catch(() => {});
+    }, [activeAccount, analysisFilter, analysisFilterValue]);
 
     useEffect(() => {
       fetch('/api/auth/me')
@@ -576,6 +588,309 @@ export default function TradingDashboard() {
                 <a href="https://app.travitrade.com/registro?plan=pro" style={{ color: '#1D9E75', fontSize: '12px' }}>Actualizar a Pro →</a>
               </div>
             )}
+
+            {/* ANÁLISIS POR TIPO DE ENTRADA */}
+            <div style={{ background: '#0d1f14', border: '0.5px solid #1a3a24', borderRadius: '12px', padding: '20px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>Análisis por Tipo de Entrada</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', marginTop: '2px' }}>Clasificado por dirección y rendimiento</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {/* Filtro por dirección */}
+                  {['ALL', 'LONG', 'SHORT'].map(s => (
+                    <button key={s} onClick={() => setSideFilter(s)}
+                      style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '500', cursor: 'pointer',
+                        border: `0.5px solid ${sideFilter === s ? (s === 'LONG' ? '#1D9E75' : s === 'SHORT' ? '#E24B4A' : '#9FE1CB') : '#1a3a24'}`,
+                        background: sideFilter === s ? (s === 'LONG' ? '#0f2e1a' : s === 'SHORT' ? '#2a1010' : '#0d1f14') : 'transparent',
+                        color: sideFilter === s ? (s === 'LONG' ? '#1D9E75' : s === 'SHORT' ? '#E24B4A' : '#9FE1CB') : 'rgba(159,225,203,0.5)'
+                      }}>
+                      {s === 'ALL' ? 'Todas' : s === 'LONG' ? '↑ Compra' : '↓ Venta'}
+                    </button>
+                  ))}
+
+                  {/* Filtro por periodo */}
+                  <select value={analysisFilter} onChange={e => { setAnalysisFilter(e.target.value); setAnalysisFilterValue('') }}
+                    style={{ background: '#0a1a0f', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '5px 10px', color: '#9FE1CB', fontSize: '12px' }}>
+                    <option value="all">Todo el tiempo</option>
+                    <option value="month">Por mes</option>
+                    <option value="week">Por semana</option>
+                  </select>
+
+                  {analysisFilter === 'month' && (
+                    <select value={analysisFilterValue} onChange={e => setAnalysisFilterValue(e.target.value)}
+                      style={{ background: '#0a1a0f', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '5px 10px', color: '#9FE1CB', fontSize: '12px' }}>
+                      <option value="">Selecciona mes</option>
+                      {analysis?.availableMonths?.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  )}
+
+                  {analysisFilter === 'week' && (
+                    <select value={analysisFilterValue} onChange={e => setAnalysisFilterValue(e.target.value)}
+                      style={{ background: '#0a1a0f', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '5px 10px', color: '#9FE1CB', fontSize: '12px' }}>
+                      <option value="">Selecciona semana</option>
+                      {analysis?.availableWeeks?.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                    </select>
+                  )}
+
+                  {(sideFilter !== 'ALL' || analysisFilter !== 'all' || analysisFilterValue !== '') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSideFilter('ALL');
+                        setAnalysisFilter('all');
+                        setAnalysisFilterValue('');
+                      }}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        border: '0.5px solid #1a3a24',
+                        background: '#0a1a0f',
+                        color: '#E24B4A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Restaurar todos los filtros de esta sección"
+                    >
+                      ✕ Limpiar filtro
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Resumen por dirección (Clickable Filters) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+                {(analysis?.byDirection || []).map(dir => {
+                  const winRate = dir.total > 0 ? ((dir.wins / dir.total) * 100).toFixed(1) : 0
+                  const isLong = dir.side === 'LONG'
+                  const pnlVal = parseFloat(dir.total_pnl || 0)
+                  const formattedPnl = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`
+                  const isSelected = sideFilter === dir.side
+
+                  return (
+                    <div
+                      key={dir.side}
+                      onClick={() => setSideFilter(isSelected ? 'ALL' : dir.side)}
+                      style={{
+                        background: isSelected ? (isLong ? '#0f2e1a' : '#2a1010') : '#0a1a0f',
+                        borderLeft: isSelected ? `1.5px solid ${isLong ? '#1D9E75' : '#E24B4A'}` : `0.5px solid ${isLong ? 'rgba(29,158,117,0.3)' : 'rgba(226,75,74,0.3)'}`,
+                        borderRight: isSelected ? `1.5px solid ${isLong ? '#1D9E75' : '#E24B4A'}` : `0.5px solid ${isLong ? 'rgba(29,158,117,0.3)' : 'rgba(226,75,74,0.3)'}`,
+                        borderBottom: isSelected ? `1.5px solid ${isLong ? '#1D9E75' : '#E24B4A'}` : `0.5px solid ${isLong ? 'rgba(29,158,117,0.3)' : 'rgba(226,75,74,0.3)'}`,
+                        borderTop: `3px solid ${isLong ? '#1D9E75' : '#E24B4A'}`,
+                        borderRadius: '10px',
+                        padding: '12px 14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? `0 0 12px ${isLong ? 'rgba(29,158,117,0.2)' : 'rgba(226,75,74,0.2)'}` : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: isLong ? '#1D9E75' : '#E24B4A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {isLong ? '↑ COMPRA (LONG)' : '↓ VENTA (SHORT)'}
+                          {isSelected && <span style={{ fontSize: '9px', background: isLong ? '#1D9E75' : '#E24B4A', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>FILTRADO</span>}
+                        </span>
+                        <span style={{ fontSize: '16px', fontWeight: '600', color: '#fff' }}>{winRate}%</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6px' }}>
+                        {[
+                          { label: 'ENTRADAS', value: dir.total, color: '#fff' },
+                          { label: 'GANADAS', value: dir.wins, color: '#1D9E75' },
+                          { label: 'PERDIDAS', value: dir.losses, color: '#E24B4A' },
+                          { label: 'BE', value: dir.be, color: '#F59E0B' },
+                        ].map(stat => (
+                          <div key={stat.label} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '8px', color: 'rgba(159,225,203,0.4)', letterSpacing: '0.5px', marginBottom: '2px' }}>{stat.label}</div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: stat.color }}>{stat.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '0.5px solid #1a3a24', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)' }}>PNL Total</span>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: pnlVal >= 0 ? '#1D9E75' : '#E24B4A' }}>
+                          {formattedPnl}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Tabla compacta por setup y dirección (Fits screen without horizontal scroll) */}
+              <div style={{ width: '100%' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 3px', fontSize: '11px', tableLayout: 'auto' }}>
+                  <thead>
+                    <tr>
+                      {[
+                        { label: 'SETUP', align: 'left' },
+                        { label: 'DIRECCIÓN', align: 'left' },
+                        { label: 'TIPO', align: 'center' },
+                        { label: 'ENTRADAS', align: 'center' },
+                        { label: 'GANADAS', align: 'center' },
+                        { label: 'PERDIDAS', align: 'center' },
+                        { label: 'BE', align: 'center' },
+                        { label: 'WIN RATE', align: 'right' },
+                        { label: 'PNL', align: 'right' },
+                      ].map(col => (
+                        <th key={col.label} style={{
+                          padding: '8px 8px',
+                          textAlign: col.align,
+                          color: 'rgba(159,225,203,0.4)',
+                          fontSize: '9px',
+                          letterSpacing: '0.5px',
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap',
+                          borderBottom: '1px solid #1a3a24'
+                        }}>
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(analysis?.bySetupDirection || [])
+                      .filter(s => sideFilter === 'ALL' || s.side === sideFilter)
+                      .sort((a, b) => parseInt(b.total) - parseInt(a.total))
+                      .map((s, i) => {
+                        const wr = s.total > 0 ? ((s.wins / s.total) * 100).toFixed(1) : 0
+                        const pnlVal = parseFloat(s.total_pnl || 0)
+                        const formattedPnl = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`
+                        const setupColor = s.setup_color || (s.setup_name ? '#1D9E75' : 'rgba(159,225,203,0.3)')
+
+                        return (
+                          <tr key={i} style={{ background: '#0a1a0f' }}>
+                            <td style={{
+                              padding: '8px 8px',
+                              borderLeft: '1px solid #1a3a24',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24',
+                              borderTopLeftRadius: '6px',
+                              borderBottomLeftRadius: '6px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: setupColor, flexShrink: 0 }} />
+                                <span style={{ color: s.setup_name ? '#fff' : 'rgba(159,225,203,0.5)', fontWeight: '500', fontSize: '11px', lineHeight: '1.3', wordBreak: 'break-word' }}>
+                                  {s.setup_name || 'Sin setup'}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: '600',
+                                color: s.setup_direction === 'LONG' ? '#1D9E75' : s.setup_direction === 'SHORT' ? '#E24B4A' : '#F59E0B'
+                              }}>
+                                {s.setup_direction || '—'}
+                              </span>
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              textAlign: 'center',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '2px 7px',
+                                borderRadius: '12px',
+                                fontSize: '10px',
+                                fontWeight: '500',
+                                whiteSpace: 'nowrap',
+                                background: s.side === 'LONG' ? 'rgba(29,158,117,0.15)' : 'rgba(226,75,74,0.15)',
+                                color: s.side === 'LONG' ? '#1D9E75' : '#E24B4A',
+                                border: `0.5px solid ${s.side === 'LONG' ? '#1D9E75' : '#E24B4A'}`
+                              }}>
+                                {s.side === 'LONG' ? '↑ Compra' : '↓ Venta'}
+                              </span>
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              textAlign: 'center',
+                              color: '#fff',
+                              fontWeight: '600',
+                              fontSize: '11px',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24'
+                            }}>
+                              {s.total}
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              textAlign: 'center',
+                              color: '#1D9E75',
+                              fontWeight: '500',
+                              fontSize: '11px',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24'
+                            }}>
+                              {s.wins}
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              textAlign: 'center',
+                              color: '#E24B4A',
+                              fontWeight: '500',
+                              fontSize: '11px',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24'
+                            }}>
+                              {s.losses}
+                            </td>
+                            <td style={{
+                              padding: '8px 6px',
+                              textAlign: 'center',
+                              color: '#F59E0B',
+                              fontWeight: '500',
+                              fontSize: '11px',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24'
+                            }}>
+                              {s.be}
+                            </td>
+                            <td style={{
+                              padding: '8px 8px',
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24'
+                            }}>
+                              <span style={{ color: parseFloat(wr) >= 50 ? '#1D9E75' : '#E24B4A', fontWeight: '600', fontSize: '11px' }}>
+                                {wr}%
+                              </span>
+                            </td>
+                            <td style={{
+                              padding: '8px 8px',
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                              borderRight: '1px solid #1a3a24',
+                              borderTop: '1px solid #1a3a24',
+                              borderBottom: '1px solid #1a3a24',
+                              borderTopRightRadius: '6px',
+                              borderBottomRightRadius: '6px'
+                            }}>
+                              <span style={{ color: pnlVal >= 0 ? '#1D9E75' : '#E24B4A', fontWeight: '600', fontSize: '11px' }}>
+                                {formattedPnl}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             {/* GLOBAL MODALS */}
             {showSetupModal && (
