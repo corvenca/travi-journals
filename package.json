@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
     "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.3",
