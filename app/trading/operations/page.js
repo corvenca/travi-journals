@@ -30,6 +30,51 @@ export default function TradingOperationsLog() {
     const [resultType, setResultType] = useState('');
     const [highlightedDate, setHighlightedDate] = useState(null);
 
+    // Transfer states
+    const [selectedOps, setSelectedOps] = useState([]);
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [targetAccount, setTargetAccount] = useState('');
+    const [accounts, setAccounts] = useState([]);
+    const [transferring, setTransferring] = useState(false);
+    const [transferSuccess, setTransferSuccess] = useState('');
+    const [selectMode, setSelectMode] = useState(false);
+
+    useEffect(() => {
+      fetch('/api/trading/accounts')
+        .then(r => r.json())
+        .then(data => setAccounts(Array.isArray(data) ? data : []))
+        .catch(() => {})
+    }, []);
+
+    const handleTransfer = async (actionType = 'transfer') => {
+      if (!targetAccount || selectedOps.length === 0) return
+      setTransferring(true)
+      try {
+        const res = await fetch('/api/trading/operations/transfer', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operationIds: selectedOps,
+            targetAccountId: parseInt(targetAccount),
+            action: actionType
+          })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setTransferSuccess(data.message)
+          setShowTransferModal(false)
+          setSelectedOps([])
+          setSelectMode(false)
+          setTargetAccount('')
+          fetchData()
+          setTimeout(() => setTransferSuccess(''), 3000)
+        } else {
+          alert('Error: ' + data.error)
+        }
+      } catch { alert('Error de conexión') }
+      setTransferring(false)
+    }
+
     useEffect(() => {
         if (typeof window !== "undefined") {
             const urlParams = new URLSearchParams(window.location.search);
@@ -263,14 +308,82 @@ export default function TradingOperationsLog() {
                 </button>
             </div>
 
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+              <button onClick={() => { setSelectMode(!selectMode); setSelectedOps([]) }}
+                style={{ padding: '8px 16px', background: selectMode ? '#0f2e1a' : 'transparent', border: `0.5px solid ${selectMode ? '#1D9E75' : '#1a3a24'}`, borderRadius: '8px', color: selectMode ? '#1D9E75' : 'rgba(159,225,203,0.6)', fontSize: '13px', cursor: 'pointer' }}>
+                {selectMode ? `✓ ${selectedOps.length} seleccionadas` : 'Seleccionar'}
+              </button>
+
+              {selectMode && selectedOps.length > 0 && (
+                <button onClick={() => setShowTransferModal(true)}
+                  style={{ padding: '8px 16px', background: '#1D9E75', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>
+                  Transferir o Copiar a otra cuenta →
+                </button>
+              )}
+
+              {selectMode && (
+                <button onClick={() => setSelectedOps(operations.map(o => o.id))}
+                  style={{ padding: '8px 16px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '8px', color: 'rgba(159,225,203,0.5)', fontSize: '12px', cursor: 'pointer' }}>
+                  Seleccionar todas
+                </button>
+              )}
+            </div>
+
+            {transferSuccess && (
+              <div style={{ background: 'rgba(29,158,117,0.1)', border: '0.5px solid #1D9E75', borderRadius: '8px', padding: '10px 14px', color: '#1D9E75', fontSize: '13px', marginBottom: '12px' }}>
+                ✓ {transferSuccess}
+              </div>
+            )}
+
             <div className={styles.cardList}>
                 {operations.length === 0 ? (
                     <div style={{textAlign: 'center', color: '#64748b', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)'}}>
                         No hay operaciones registradas.
                     </div>
-                ) : operations.map(op => (
-                    <div key={op.id} id={`op-${op.id}`} className={`${styles.opCard} ${op.date === highlightedDate ? styles.highlightedCard : ''}`}>
-                        
+                ) : operations.map(op => {
+                    const isSelected = selectedOps.includes(op.id);
+                    return (
+                    <div 
+                        key={op.id} 
+                        id={`op-${op.id}`} 
+                        onClick={() => {
+                            if (!selectMode) setSelectMode(true);
+                            setSelectedOps(prev => prev.includes(op.id) ? prev.filter(id => id !== op.id) : [...prev, op.id]);
+                        }}
+                        className={`${styles.opCard} ${op.date === highlightedDate ? styles.highlightedCard : ''}`}
+                        style={{
+                            cursor: 'pointer',
+                            position: 'relative',
+                            transition: 'all 0.2s ease',
+                            ...(isSelected ? {
+                                border: '1.5px solid #1D9E75',
+                                boxShadow: '0 0 12px rgba(29, 158, 117, 0.35)',
+                                background: 'rgba(29, 158, 117, 0.08)'
+                            } : {})
+                        }}
+                    >
+                        {isSelected && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '12px',
+                            background: '#1D9E75',
+                            color: '#fff',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justify: 'center',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 0 6px rgba(29,158,117,0.6)',
+                            zIndex: 2
+                          }}>
+                            ✓
+                          </div>
+                        )}
+
                         {/* IZQUIERDA: Icono Arrow */}
                         <div className={`${styles.cardIcon} ${op.side === 'LONG' ? styles.long : styles.short}`}>
                             {op.side === 'LONG' ? <ArrowUp size={32} /> : <ArrowDown size={32} />}
@@ -294,7 +407,7 @@ export default function TradingOperationsLog() {
                                 <span className={`${styles.badge}`}>Contratos: {op.contratos ?? '-'}</span>
                             </div>
                             {(op.imageUrl || op.image_url) && (
-                                <a href={op.imageUrl || op.image_url} target="_blank" rel="noopener noreferrer" className={styles.cardLink}>
+                                <a href={op.imageUrl || op.image_url} target="_blank" rel="noopener noreferrer" className={styles.cardLink} onClick={e => e.stopPropagation()}>
                                     <LinkIcon size={14} /> Ver imagen
                                 </a>
                             )}
@@ -322,13 +435,14 @@ export default function TradingOperationsLog() {
 
                         {/* EXTREMO DERECHO: Acciones */}
                         <div className={styles.cardActions}>
-                            <button className={styles.btnAction} onClick={() => handleEdit(op)} title="Editar"><Edit size={18} /></button>
-                            <button className={styles.btnAction} onClick={() => viewDetail(op)} title="Ver Detalles"><Eye size={18} /></button>
-                            <button className={styles.btnAction} onClick={() => handleDelete(op.id)} title="Eliminar"><Trash2 size={18} /></button>
+                            <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); handleEdit(op); }} title="Editar"><Edit size={18} /></button>
+                            <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); viewDetail(op); }} title="Ver Detalles"><Eye size={18} /></button>
+                            <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); handleDelete(op.id); }} title="Eliminar"><Trash2 size={18} /></button>
                         </div>
 
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Modal Nueva Operacion */}
@@ -549,6 +663,49 @@ export default function TradingOperationsLog() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showTransferModal && (
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                <div style={{ background: '#0d1f14', border: '0.5px solid #1a3a24', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '440px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: '500', color: '#fff', marginBottom: '6px' }}>Transferir o Copiar Operaciones</h2>
+                  <p style={{ fontSize: '13px', color: 'rgba(159,225,203,0.5)', marginBottom: '20px' }}>
+                    {selectedOps.length} operación(es) seleccionada(s)
+                  </p>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', letterSpacing: '1px', marginBottom: '8px', display: 'block' }}>CUENTA DESTINO</label>
+                    <select value={targetAccount} onChange={e => setTargetAccount(e.target.value)}
+                      style={{ width: '100%', background: '#0a1a0f', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '10px 12px', color: '#9FE1CB', fontSize: '13px' }}>
+                      <option value="">Selecciona la cuenta destino</option>
+                      {accounts
+                        .filter(a => a.id !== activeAccount?.id)
+                        .map(a => <option key={a.id} value={a.id}>{a.name} — {a.broker || 'Sin broker'}</option>)
+                      }
+                    </select>
+                  </div>
+                  <div style={{ background: 'rgba(29,158,117,0.1)', border: '0.5px solid #1D9E75', borderRadius: '8px', padding: '10px 14px', fontSize: '12px', color: '#9FE1CB', marginBottom: '20px', lineHeight: '1.5' }}>
+                    • <strong>Transferir</strong>: Desplaza las operaciones seleccionadas a la otra cuenta.<br/>
+                    • <strong>Copiar</strong>: Mantiene la operación en ambas cuentas.<br/>
+                    <span style={{ color: 'rgba(159,225,203,0.6)', fontSize: '11px' }}>📅 En ambas cuentas se ordenan automáticamente según la fecha.</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button onClick={() => handleTransfer('transfer')} disabled={!targetAccount || transferring}
+                        style={{ flex: 1, padding: '10px', background: '#1D9E75', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', opacity: !targetAccount || transferring ? 0.6 : 1 }}>
+                        {transferring ? 'Procesando...' : 'Transferir'}
+                      </button>
+                      <button onClick={() => handleTransfer('copy')} disabled={!targetAccount || transferring}
+                        style={{ flex: 1, padding: '10px', background: '#0f2e1a', border: '0.5px solid #1D9E75', borderRadius: '8px', color: '#1D9E75', fontSize: '13px', fontWeight: '500', cursor: 'pointer', opacity: !targetAccount || transferring ? 0.6 : 1 }}>
+                        {transferring ? 'Procesando...' : 'Copiar'}
+                      </button>
+                    </div>
+                    <button onClick={() => { setShowTransferModal(false); setTargetAccount('') }}
+                      style={{ width: '100%', padding: '10px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '8px', color: 'rgba(159,225,203,0.5)', fontSize: '13px', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {showSetupModal && (
