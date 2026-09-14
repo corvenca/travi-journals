@@ -4,7 +4,7 @@ export function middleware(request) {
   const token = request.cookies.get('journals_token')
   const { pathname } = request.nextUrl
 
-  const publicRoutes = ['/login']
+  const publicRoutes = ['/login', '/auth/impersonate']
   const isPublic = publicRoutes.some(r => pathname.startsWith(r))
 
   if (!token && !isPublic) {

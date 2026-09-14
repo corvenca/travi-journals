@@ -12,7 +12,8 @@ export async function GET() {
       nombre: decoded.nombre,
       email: decoded.email,
       userId: decoded.userId,
-      plan: decoded.plan || 'free'
+      plan: decoded.plan || 'free',
+      impersonatedBy: decoded.impersonatedBy || null
     })
   } catch {
     return NextResponse.json({ error: 'Token inválido' }, { status: 401 })

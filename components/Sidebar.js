@@ -22,6 +22,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
     const [isAccountsOpen, setIsAccountsOpen] = useState(false);
     const { activeAccount, setAccount } = useActiveAccount() || {};
     const [accounts, setAccounts] = useState([]);
+    const [isImpersonating, setIsImpersonating] = useState(false);
 
     useEffect(() => {
         fetch('/api/auth/me')
@@ -31,13 +32,29 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                     setUser({ username: data.nombre, email: data.email, role: 'USER' });
                     setPlan(data.plan || 'free');
                 }
+                if (data.impersonatedBy) {
+                    setIsImpersonating(true);
+                }
             })
             .catch(() => setUser({ username: 'Trader', role: 'USER' }));
         
         if (pathname.startsWith('/trading')) {
             fetch('/api/trading/accounts')
                 .then(res => res.json())
-                .then(data => setAccounts(data))
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setAccounts(data);
+                        if (setAccount) {
+                            if (data.length > 0) {
+                                if (!activeAccount || !data.some(a => a.id === activeAccount.id)) {
+                                    setAccount(data[0]);
+                                }
+                            } else {
+                                setAccount(null);
+                            }
+                        }
+                    }
+                })
                 .catch(console.error);
         }
 
@@ -67,6 +84,11 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 />
             )}
             <aside className={`${styles.sidebar} ${isReports ? styles.mobileSidebar : ''} ${isMobileMenuOpen ? styles.open : ''}`}>
+                {isImpersonating && (
+                    <div style={{ background: '#F59E0B', padding: '8px 16px', fontSize: '11px', color: '#0a1a0f', fontWeight: '500', textAlign: 'center', borderRadius: '4px', marginBottom: '1rem' }}>
+                        👁 Modo vista admin — Estás viendo la cuenta de otro usuario
+                    </div>
+                )}
                 <div className={styles.logo} style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '2rem' }}>
                       <img
                         src="/logo.png"
