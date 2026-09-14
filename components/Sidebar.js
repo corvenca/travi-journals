@@ -248,7 +248,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 </div>
                 
                 <a
-                  href="https://app.travitrade.com/dashboard"
+                  href={`${process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3001'}/dashboard`}
                   className={styles.changeModuleBtn}
                   style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
