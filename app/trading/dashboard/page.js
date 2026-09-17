@@ -55,6 +55,7 @@ export default function TradingDashboard() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [showSetupModal, setShowSetupModal] = useState(false);
+    const [setupFilter, setSetupFilter] = useState(null); // { name, id }
     const [analysis, setAnalysis] = useState(null);
     const [analysisFilter, setAnalysisFilter] = useState('all');
     const [analysisFilterValue, setAnalysisFilterValue] = useState('');
@@ -762,7 +763,23 @@ export default function TradingDashboard() {
                         const setupColor = s.setup_color || (s.setup_name ? '#1D9E75' : 'rgba(159,225,203,0.3)')
 
                         return (
-                          <tr key={i} style={{ background: '#0a1a0f' }}>
+                          <tr key={i}
+                            onDoubleClick={() => {
+                              setSetupFilter({ name: s.setup_name, setupId: s.setup_id })
+                              if (s.setup_name) {
+                                router.push(`/trading/operations?setup=${encodeURIComponent(s.setup_name)}`)
+                              }
+                            }}
+                            style={{
+                              background: '#0a1a0f',
+                              borderBottom: '0.5px solid #1a3a24',
+                              cursor: 'pointer',
+                              transition: 'background 0.15s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#0f2a1a'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#0a1a0f'}
+                            title="Doble clic para ver operaciones de este setup"
+                          >
                             <td style={{
                               padding: '8px 8px',
                               borderLeft: '1px solid #1a3a24',

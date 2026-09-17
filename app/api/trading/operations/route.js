@@ -18,7 +18,10 @@ export async function GET(request) {
                 o.*,
                 a.name as accountName,
                 s.name as setupName,
-                s.color as setupColor
+                s.name as setup_name,
+                s.color as setupColor,
+                s.color as setup_color,
+                s.direction as setup_direction
             FROM trading_operations o
             LEFT JOIN trading_accounts a ON o.account_id = a.id
             LEFT JOIN trading_setups s ON o.setup_id = s.id
@@ -43,8 +46,11 @@ export async function GET(request) {
             imageUrl: row.image_url !== undefined ? row.image_url : row.imageUrl,
             setupId: row.setup_id !== undefined ? row.setup_id : row.setupId,
             accountId: row.account_id !== undefined ? row.account_id : row.accountId,
-            setupName: row.setupname !== undefined ? row.setupname : row.setupName,
-            setupColor: row.setupcolor !== undefined ? row.setupcolor : row.setupColor,
+            setupName: row.setup_name || row.setupname || row.setupName,
+            setup_name: row.setup_name || row.setupname || row.setupName,
+            setupColor: row.setup_color || row.setupcolor || row.setupColor,
+            setup_color: row.setup_color || row.setupcolor || row.setupColor,
+            setup_direction: row.setup_direction || row.setupDirection,
             accountName: row.accountname !== undefined ? row.accountname : row.accountName
         }));
         return NextResponse.json(mappedRows);

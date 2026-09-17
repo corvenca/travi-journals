@@ -27,6 +27,7 @@ export default function TradingOperationsLog() {
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
     
+    const [setupNameFilter, setSetupNameFilter] = useState('');
     const [resultType, setResultType] = useState('');
     const [highlightedDate, setHighlightedDate] = useState(null);
 
@@ -83,6 +84,10 @@ export default function TradingOperationsLog() {
                 setHighlightedDate(dateParam);
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
+            }
+            const setupParam = urlParams.get('setup');
+            if (setupParam) {
+                setSetupNameFilter(decodeURIComponent(setupParam));
             }
         }
     }, []);
@@ -291,6 +296,12 @@ export default function TradingOperationsLog() {
         }
     }
 
+    const filteredOperations = operations.filter(op => {
+        if (!setupNameFilter) return true;
+        const sName = op.setup_name || op.setupName || '';
+        return sName === setupNameFilter || sName.toLowerCase().includes(setupNameFilter.toLowerCase());
+    });
+
     if (!isLoaded || loading) return <div className={styles.container}><Loader2 className="animate-spin" /> Cargando bitácora...</div>;
 
     return (
@@ -300,7 +311,7 @@ export default function TradingOperationsLog() {
                     <h1 className={styles.title}>Bitácora de Operaciones</h1>
                     <p className={styles.subtitle}>
                         Cuenta Activa: <strong>{activeAccount?.name}</strong> 
-                        <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>({operations.length} operaciones registradas)</span>
+                        <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>({filteredOperations.length} operaciones registradas)</span>
                     </p>
                 </div>
                 <button className={styles.btnPrimary} onClick={handleOpenModal}>
@@ -322,12 +333,31 @@ export default function TradingOperationsLog() {
               )}
 
               {selectMode && (
-                <button onClick={() => setSelectedOps(operations.map(o => o.id))}
+                <button onClick={() => setSelectedOps(filteredOperations.map(o => o.id))}
                   style={{ padding: '8px 16px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '8px', color: 'rgba(159,225,203,0.5)', fontSize: '12px', cursor: 'pointer' }}>
                   Seleccionar todas
                 </button>
               )}
             </div>
+
+            {setupNameFilter && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: '#0f2e1a', border: '0.5px solid #1D9E75',
+                borderRadius: '8px', padding: '8px 14px', marginBottom: '14px'
+              }}>
+                <span style={{ fontSize: '13px', color: '#1D9E75' }}>
+                  🎯 Filtrando por setup: <strong>{setupNameFilter}</strong>
+                </span>
+                <button onClick={() => {
+                  setSetupNameFilter('')
+                  window.history.replaceState({}, '', '/trading/operations')
+                }}
+                  style={{ background: 'transparent', border: 'none', color: '#E24B4A', fontSize: '18px', cursor: 'pointer', lineHeight: 1 }}>
+                  ×
+                </button>
+              </div>
+            )}
 
             {transferSuccess && (
               <div style={{ background: 'rgba(29,158,117,0.1)', border: '0.5px solid #1D9E75', borderRadius: '8px', padding: '10px 14px', color: '#1D9E75', fontSize: '13px', marginBottom: '12px' }}>
@@ -336,11 +366,11 @@ export default function TradingOperationsLog() {
             )}
 
             <div className={styles.cardList}>
-                {operations.length === 0 ? (
+                {filteredOperations.length === 0 ? (
                     <div style={{textAlign: 'center', color: '#64748b', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)'}}>
                         No hay operaciones registradas.
                     </div>
-                ) : operations.map(op => {
+                ) : filteredOperations.map(op => {
                     const isSelected = selectedOps.includes(op.id);
                     return (
                     <div 
@@ -400,7 +430,19 @@ export default function TradingOperationsLog() {
                             <div className={styles.cardMeta}>
                                 <span>{op.date}</span>
                                 <span>•</span>
-                                <span className={`${styles.badge} ${styles.setup}`}>{op.setupName || 'Sin Setup'}</span>
+                                {(op.setup_name || op.setupName) ? (
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                    fontSize: '11px', padding: '2px 8px', borderRadius: '20px',
+                                    background: '#0a1a0f', border: '0.5px solid #1a3a24',
+                                    color: '#9FE1CB'
+                                  }}>
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: op.setup_color || op.setupColor || '#1D9E75', flexShrink: 0 }} />
+                                    {op.setup_name || op.setupName}
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: 'rgba(159,225,203,0.3)' }}>Sin setup</span>
+                                )}
                                 <span>•</span>
                                 <span className={`${styles.badge} ${styles.sesion}`}>{op.sesion || 'N/A'}</span>
                                 <span>•</span>
