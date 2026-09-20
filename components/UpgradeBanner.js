@@ -22,9 +22,9 @@ export default function UpgradeBanner({ planStatus }) {
           style={{ padding: '7px 14px', background: '#1D9E75', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '500', textDecoration: 'none', whiteSpace: 'nowrap' }}>
           Pro $5.99/mes
         </a>
-        <a href="https://app.travitrade.com/upgrade?plan=annual"
+        <a href="mailto:atencionalcliente@travitrade.com?subject=Activar Plan Pro Travi Journals"
           style={{ padding: '7px 14px', background: 'transparent', border: '0.5px solid #1D9E75', borderRadius: '8px', color: '#1D9E75', fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-          Anual $50
+          Contacto
         </a>
       </div>
     </div>

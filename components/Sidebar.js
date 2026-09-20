@@ -259,10 +259,17 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                     <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', marginBottom: '8px', lineHeight: '1.4' }}>
                       Operaciones ilimitadas, reportes y más.
                     </div>
-                    <a href="https://app.travitrade.com/upgrade"
-                      style={{ display: 'block', padding: '7px', background: '#1D9E75', borderRadius: '6px', color: '#fff', fontSize: '12px', fontWeight: '500', textDecoration: 'none', textAlign: 'center' }}>
-                      $5.99/mes →
-                    </a>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <a href="https://app.travitrade.com/upgrade"
+                        style={{ flex: 1, padding: '7px', background: '#1D9E75', borderRadius: '6px', color: '#fff', fontSize: '11px', fontWeight: '500', textDecoration: 'none', textAlign: 'center' }}>
+                        $5.99/mes →
+                      </a>
+                      <a href="mailto:atencionalcliente@travitrade.com"
+                        style={{ padding: '7px 10px', background: 'transparent', border: '0.5px solid #1D9E75', borderRadius: '6px', color: '#1D9E75', fontSize: '11px', textDecoration: 'none', textAlign: 'center' }}
+                        title="Contacto: atencionalcliente@travitrade.com">
+                        ✉
+                      </a>
+                    </div>
                   </div>
                 )}
 

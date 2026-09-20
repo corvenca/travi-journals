@@ -52,6 +52,10 @@ export default function PlanGuard({ children }) {
               style={{ display: 'block', padding: '14px', background: '#0f2e1a', border: '0.5px solid #1D9E75', borderRadius: '10px', color: '#1D9E75', fontSize: '13px', textDecoration: 'none' }}>
               💰 Plan Anual — $50/año ($4.16/mes) · Ahorras $21.88
             </a>
+            <a href="mailto:atencionalcliente@travitrade.com?subject=Activar Plan Pro Travi Journals"
+              style={{ display: 'block', padding: '10px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '10px', color: 'rgba(159,225,203,0.6)', fontSize: '13px', textDecoration: 'none' }}>
+              ✉ Contactar a Soporte (atencionalcliente@travitrade.com)
+            </a>
             <button onClick={() => router.push('/trading/dashboard')}
               style={{ padding: '10px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '10px', color: 'rgba(159,225,203,0.5)', fontSize: '13px', cursor: 'pointer' }}>
               Ver mi dashboard →
