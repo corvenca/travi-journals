@@ -70,8 +70,8 @@ export async function POST(request) {
         const data = await request.json();
         console.log('DATA RECIBIDA:', data); // debug
         
-        const plan = user.plan || 'free';
-        if (plan === 'free') {
+        const isPro = user.hasFullAccess || user.plan === 'pro' || user.plan === 'free_full';
+        if (!isPro) {
             const existing = await pool.query('SELECT COUNT(*) FROM trading_operations WHERE user_id = $1', [user.userId]);
             if (parseInt(existing.rows[0].count) >= 40) {
                 return NextResponse.json({ error: 'Plan Free: límite de 40 operaciones alcanzado. Actualiza a Pro para operaciones ilimitadas.' }, { status: 403 });

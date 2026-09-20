@@ -8,11 +8,15 @@ export async function GET() {
     const token = cookieStore.get('journals_token')
     if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     const decoded = jwt.verify(token.value, process.env.JWT_SECRET || 'travitrade_secret_2025')
+    const isAdmin = decoded.email === 'altuveronalbis@gmail.com'
+    const plan = isAdmin ? 'pro' : (decoded.plan || 'free')
+    const hasFullAccess = plan === 'pro' || plan === 'free_full'
     return NextResponse.json({
       nombre: decoded.nombre,
       email: decoded.email,
       userId: decoded.userId,
-      plan: decoded.plan || 'free',
+      plan,
+      hasFullAccess,
       impersonatedBy: decoded.impersonatedBy || null
     })
   } catch {
