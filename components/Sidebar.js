@@ -23,6 +23,18 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
     const { activeAccount, setAccount } = useActiveAccount() || {};
     const [accounts, setAccounts] = useState([]);
     const [isImpersonating, setIsImpersonating] = useState(false);
+    const [opsCount, setOpsCount] = useState(0);
+
+    useEffect(() => {
+        fetch('/api/trading/operations/count')
+            .then(r => r.json())
+            .then(data => {
+                if (data && typeof data.count === 'number') {
+                    setOpsCount(data.count);
+                }
+            })
+            .catch(() => {});
+    }, [pathname]);
 
     useEffect(() => {
         fetch('/api/auth/me')
@@ -249,7 +261,9 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '500', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username || 'Trader'}</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.4)', textTransform: 'capitalize' }}>Plan {plan}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.4)', textTransform: 'capitalize' }}>
+                      {plan === 'free' ? `Plan Free: ${opsCount}/30 operaciones usadas` : `Plan ${plan}`}
+                    </div>
                   </div>
                 </div>
                 

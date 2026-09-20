@@ -54,13 +54,7 @@ export async function POST(request) {
 
         console.log('Intentando crear cuenta para usuario:', user.userId, data);
 
-        const isPro = user.hasFullAccess || user.plan === 'pro' || user.plan === 'free_full';
-        if (!isPro) {
-            const existing = await pool.query('SELECT COUNT(*) FROM trading_accounts WHERE user_id = $1', [user.userId]);
-            if (parseInt(existing.rows[0].count) >= 1) {
-                return NextResponse.json({ error: 'Plan Free: solo puedes tener 1 cuenta. Actualiza a Pro para cuentas ilimitadas.' }, { status: 403 });
-            }
-        }
+
 
         const result = await pool.query(`
             INSERT INTO trading_accounts (user_id, name, broker, type, initial_capital, risk_percent, trader_name, trader_email, trader_address, account_number)
