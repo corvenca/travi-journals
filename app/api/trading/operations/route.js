@@ -70,11 +70,22 @@ export async function POST(request) {
         const data = await request.json();
         console.log('DATA RECIBIDA:', data); // debug
         
-        const isPro = user.hasFullAccess || user.plan === 'pro' || user.plan === 'free_full';
+        const isPro = user.plan === 'pro' || user.plan === 'free_full';
+
         if (!isPro) {
-            const existing = await pool.query('SELECT COUNT(*) FROM trading_operations WHERE user_id = $1', [user.userId]);
-            if (parseInt(existing.rows[0].count) >= 40) {
-                return NextResponse.json({ error: 'Plan Free: límite de 40 operaciones alcanzado. Actualiza a Pro para operaciones ilimitadas.' }, { status: 403 });
+            const countRes = await pool.query(
+                'SELECT COUNT(*) FROM trading_operations WHERE user_id = $1',
+                [user.userId]
+            );
+            const count = parseInt(countRes.rows[0].count);
+
+            if (count >= 30) {
+                return NextResponse.json({
+                    error: 'Has alcanzado el límite de 30 operaciones del plan Free.',
+                    limit: true,
+                    current: count,
+                    max: 30
+                }, { status: 403 });
             }
         }
         
@@ -163,3 +174,33 @@ export async function POST(request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function DELETE(request) {
+  try {
+    const user = await getUserFromToken()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const isPro = user.plan === 'pro' || user.plan === 'free_full'
+
+    if (!isPro) {
+      const countRes = await pool.query(
+        'SELECT COUNT(*) FROM trading_operations WHERE user_id = $1',
+        [user.userId]
+      )
+      const count = parseInt(countRes.rows[0].count)
+
+      if (count >= 25) {
+        return NextResponse.json({
+          error: `No puedes eliminar operaciones con el plan Free cuando tienes 25 o más registros. Actualiza a Pro para continuar.`,
+          blocked: true,
+          current: count
+        }, { status: 403 })
+      }
+    }
+
+    return NextResponse.json({ error: 'Operación no especificada' }, { status: 400 })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+

@@ -122,6 +122,24 @@ export async function DELETE(request, context) {
             return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
+        const isPro = user.plan === 'pro' || user.plan === 'free_full';
+
+        if (!isPro) {
+            const countRes = await pool.query(
+                'SELECT COUNT(*) FROM trading_operations WHERE user_id = $1',
+                [user.userId]
+            );
+            const count = parseInt(countRes.rows[0].count);
+
+            if (count >= 25) {
+                return NextResponse.json({
+                    error: `No puedes eliminar operaciones con el plan Free cuando tienes 25 o más registros. Actualiza a Pro para continuar.`,
+                    blocked: true,
+                    current: count
+                }, { status: 403 });
+            }
+        }
+
         let paramsId;
         try {
             const resolvedParams = await context.params;

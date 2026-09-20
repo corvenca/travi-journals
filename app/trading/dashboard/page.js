@@ -60,6 +60,14 @@ export default function TradingDashboard() {
     const [analysisFilter, setAnalysisFilter] = useState('all');
     const [analysisFilterValue, setAnalysisFilterValue] = useState('');
     const [sideFilter, setSideFilter] = useState('ALL');
+    const [opsLimit, setOpsLimit] = useState(null);
+
+    useEffect(() => {
+      fetch('/api/trading/operations/count')
+        .then(r => r.json())
+        .then(data => setOpsLimit(data))
+        .catch(() => {})
+    }, []);
 
     useEffect(() => {
       if (!activeAccount) return;
@@ -134,12 +142,6 @@ export default function TradingDashboard() {
 
     return (
         <div className={styles.dashboardContainer}>
-            {plan === 'free' && (
-              <div style={{ background: '#0f2e1a', border: '1px solid #1D9E75', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#9FE1CB' }}>Plan Free — {40 - (metrics?.totalTrades || 0)} operaciones restantes</span>
-                <a href="https://app.travitrade.com/registro?plan=pro" style={{ fontSize: '12px', color: '#1D9E75', fontWeight: '500', textDecoration: 'none' }}>Actualizar a Pro →</a>
-              </div>
-            )}
             <header className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Dashboard de {activeAccount.name}</h1>
@@ -167,6 +169,30 @@ export default function TradingDashboard() {
                     <p className={styles.subtitle}>Resumen de tu rendimiento y consistencia.</p>
                 </div>
             </header>
+
+            {opsLimit && !opsLimit.isPro && opsLimit.warningLevel && (
+              <div style={{
+                background: opsLimit.warningLevel === 'critical' ? 'rgba(226,75,74,0.1)' : 'rgba(245,158,11,0.1)',
+                border: `0.5px solid ${opsLimit.warningLevel === 'critical' ? '#E24B4A' : '#F59E0B'}`,
+                borderRadius: '10px', padding: '12px 16px', marginBottom: '20px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '500', color: opsLimit.warningLevel === 'critical' ? '#E24B4A' : '#F59E0B', marginBottom: '3px' }}>
+                    {opsLimit.warningLevel === 'critical' ? '⚠️' : '📊'} Te quedan {opsLimit.remaining} operaciones en tu plan Free
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(159,225,203,0.6)' }}>
+                    {opsLimit.warningLevel === 'critical'
+                      ? 'No puedes eliminar operaciones. Actualiza a Pro para continuar sin límites.'
+                      : `Has usado ${opsLimit.count} de 30 operaciones disponibles.`}
+                  </div>
+                </div>
+                <a href="https://app.travitrade.com/planes"
+                  style={{ padding: '7px 16px', background: opsLimit.warningLevel === 'critical' ? '#1D9E75' : '#F59E0B', border: 'none', borderRadius: '8px', color: opsLimit.warningLevel === 'critical' ? '#fff' : '#0a1a0f', fontSize: '12px', fontWeight: '500', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  Actualizar a Pro →
+                </a>
+              </div>
+            )}
 
             {/* FILA 1: TARJETAS PRINCIPALES */}
             <div className={styles.statsGrid}>

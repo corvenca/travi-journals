@@ -15,6 +15,14 @@ export default function TradingOperationsLog() {
     const [operations, setOperations] = useState([]);
     const [setups, setSetups] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [opsLimit, setOpsLimit] = useState(null);
+
+    useEffect(() => {
+      fetch('/api/trading/operations/count')
+        .then(r => r.json())
+        .then(data => setOpsLimit(data))
+        .catch(() => {})
+    }, [operations]);
     
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -314,10 +322,67 @@ export default function TradingOperationsLog() {
                         <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>({filteredOperations.length} operaciones registradas)</span>
                     </p>
                 </div>
-                <button className={styles.btnPrimary} onClick={handleOpenModal}>
-                    <Plus size={20} /> NUEVA OPERACIÓN
+                <button
+                  onClick={() => opsLimit?.canAdd !== false ? handleOpenModal() : null}
+                  disabled={opsLimit?.canAdd === false}
+                  style={{
+                    padding: '9px 18px',
+                    background: opsLimit?.canAdd === false ? '#1a3a24' : '#1D9E75',
+                    border: 'none', borderRadius: '8px', color: opsLimit?.canAdd === false ? 'rgba(159,225,203,0.3)' : '#fff',
+                    fontSize: '13px', fontWeight: '500',
+                    cursor: opsLimit?.canAdd === false ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '8px'
+                  }}
+                  title={opsLimit?.canAdd === false ? 'Límite de 30 operaciones alcanzado. Actualiza a Pro.' : ''}>
+                  {opsLimit?.canAdd === false ? '🔒 Límite alcanzado' : <><Plus size={20} /> NUEVA OPERACIÓN</>}
                 </button>
             </div>
+
+            {/* BANNER DE LÍMITE */}
+            {opsLimit && !opsLimit.isPro && (
+              <>
+                {opsLimit.warningLevel === 'critical' && (
+                  <div style={{
+                    background: 'rgba(226,75,74,0.1)', border: '0.5px solid #E24B4A',
+                    borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#E24B4A', marginBottom: '3px' }}>
+                        ⚠️ Te quedan solo {opsLimit.remaining} operación{opsLimit.remaining !== 1 ? 'es' : ''} disponible{opsLimit.remaining !== 1 ? 's' : ''}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(159,225,203,0.6)' }}>
+                        Has usado {opsLimit.count} de 30 registros. No puedes eliminar operaciones en este nivel.
+                      </div>
+                    </div>
+                    <a href="https://app.travitrade.com/planes"
+                      style={{ padding: '7px 16px', background: '#1D9E75', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                      Actualizar a Pro →
+                    </a>
+                  </div>
+                )}
+                {opsLimit.warningLevel === 'warning' && (
+                  <div style={{
+                    background: 'rgba(245,158,11,0.1)', border: '0.5px solid #F59E0B',
+                    borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#F59E0B', marginBottom: '3px' }}>
+                        📊 Te quedan {opsLimit.remaining} operaciones disponibles
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(159,225,203,0.6)' }}>
+                        Plan Free: {opsLimit.count}/30 operaciones usadas.
+                      </div>
+                    </div>
+                    <a href="https://app.travitrade.com/planes"
+                      style={{ padding: '7px 16px', background: '#F59E0B', border: 'none', borderRadius: '8px', color: '#0a1a0f', fontSize: '12px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                      Ver Plan Pro →
+                    </a>
+                  </div>
+                )}
+              </>
+            )}
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
               <button onClick={() => { setSelectMode(!selectMode); setSelectedOps([]) }}
@@ -479,7 +544,14 @@ export default function TradingOperationsLog() {
                         <div className={styles.cardActions}>
                             <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); handleEdit(op); }} title="Editar"><Edit size={18} /></button>
                             <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); viewDetail(op); }} title="Ver Detalles"><Eye size={18} /></button>
-                            <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); handleDelete(op.id); }} title="Eliminar"><Trash2 size={18} /></button>
+                            {opsLimit?.canDelete !== false ? (
+                              <button className={styles.btnAction} onClick={(e) => { e.stopPropagation(); handleDelete(op.id); }} title="Eliminar"><Trash2 size={18} /></button>
+                            ) : (
+                              <span title="No puedes eliminar con 25+ operaciones en plan Free"
+                                style={{ fontSize: '11px', color: 'rgba(159,225,203,0.2)', cursor: 'not-allowed', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px' }}>
+                                🔒
+                              </span>
+                            )}
                         </div>
 
                     </div>
