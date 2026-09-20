@@ -265,14 +265,12 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 </div>
                 
                 <a
-                  href={`${process.env.NEXT_PUBLIC_MAIN_APP_URL || 'http://localhost:3001'}/dashboard`}
+                  href="https://app.travitrade.com/dashboard"
+                  target="_self"
                   className={styles.changeModuleBtn}
                   style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M8 7H2M4 5L2 7L4 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Volver a la App
+                  ← Volver a la App
                 </a>
 
                 <button className={styles.logoutBtn} onClick={handleLogout}>

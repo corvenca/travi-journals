@@ -45,7 +45,7 @@ export async function GET(request) {
       thisMonthPnl: stats.thisMonthPnl || 0
     }, {
       headers: {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'https://app.travitrade.com',
         'Access-Control-Allow-Methods': 'GET',
       }
     })
