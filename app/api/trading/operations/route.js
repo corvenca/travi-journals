@@ -70,7 +70,7 @@ export async function POST(request) {
         const data = await request.json();
         console.log('DATA RECIBIDA:', data); // debug
         
-        const isPro = user.plan === 'pro' || user.plan === 'free_full';
+        const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user.plan);
 
         if (!isPro) {
             const countRes = await pool.query(
@@ -180,7 +180,7 @@ export async function DELETE(request) {
     const user = await getUserFromToken()
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const isPro = user.plan === 'pro' || user.plan === 'free_full'
+    const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user.plan)
 
     if (!isPro) {
       const countRes = await pool.query(

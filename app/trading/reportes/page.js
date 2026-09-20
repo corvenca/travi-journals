@@ -52,8 +52,24 @@ export default function ReportesDashboard() {
 
     const [error, setError] = useState(null);
 
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        fetch('/api/auth/me')
+            .then(r => r.json())
+            .then(data => setUser(data))
+            .catch(() => {});
+    }, []);
+
     useEffect(() => {
         if (!isLoaded) return;
+        if (user) {
+            const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user?.plan);
+            if (!isPro) {
+                router.push('/trading/dashboard?upgrade=reportes');
+                return;
+            }
+        }
         if (!activeAccount) {
             router.push('/trading');
             return;
@@ -63,7 +79,7 @@ export default function ReportesDashboard() {
         setStartDate(defaultStart);
         setEndDate(defaultEnd);
         fetchReport(defaultStart, defaultEnd);
-    }, [activeAccount, isLoaded]);
+    }, [activeAccount, isLoaded, user]);
 
     const fetchReport = async (overrideStart, overrideEnd) => {
         if (!activeAccount || !activeAccount.id) {

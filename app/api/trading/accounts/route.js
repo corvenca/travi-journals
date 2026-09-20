@@ -54,6 +54,21 @@ export async function POST(request) {
 
         console.log('Intentando crear cuenta para usuario:', user.userId, data);
 
+        const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user.plan);
+
+        if (!isPro) {
+            const existing = await pool.query(
+                'SELECT COUNT(*) FROM trading_accounts WHERE user_id = $1',
+                [user.userId]
+            );
+            if (parseInt(existing.rows[0].count) >= 1) {
+                return NextResponse.json({
+                    error: 'El plan Free solo permite 1 cuenta. Actualiza a Pro para cuentas ilimitadas.',
+                    limit: true
+                }, { status: 403 });
+            }
+        }
+
 
 
         const result = await pool.query(`

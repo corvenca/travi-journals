@@ -122,7 +122,7 @@ export async function DELETE(request, context) {
             return NextResponse.json({ error: 'No Autorizado' }, { status: 401 });
         }
 
-        const isPro = user.plan === 'pro' || user.plan === 'free_full';
+        const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user.plan);
 
         if (!isPro) {
             const countRes = await pool.query(

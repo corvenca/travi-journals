@@ -7,7 +7,7 @@ export async function GET() {
     const user = await getUserFromToken()
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const isPro = user.plan === 'pro' || user.plan === 'free_full'
+    const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(user.plan)
 
     const countRes = await pool.query(
       'SELECT COUNT(*) FROM trading_operations WHERE user_id = $1',

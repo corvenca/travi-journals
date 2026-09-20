@@ -225,32 +225,17 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                           );
                         })()}
 
-                        {(() => {
-                          const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(plan);
-                          return !isPro ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(159,225,203,0.3)', fontSize: '13px', cursor: 'not-allowed' }}
-                              title="Disponible en Plan Pro">
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                                <path d="M5 6V4a2 2 0 014 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                              </svg>
-                              Calendario
-                              <span style={{ fontSize: '9px', background: '#1D9E75', color: '#fff', padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>PRO</span>
-                            </div>
-                          ) : (
-                            <Link href="/trading/calendario" className={`${styles.navItem} ${pathname.startsWith('/trading/calendario') ? styles.active : ''}`}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-                                    <rect x="1" y="2" width="14" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-                                    <path d="M1 6h14" stroke="currentColor" strokeWidth="1.5"/>
-                                    <path d="M5 1v2M11 1v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                                    <rect x="4" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
-                                    <rect x="7" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
-                                    <rect x="10" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
-                                </svg>
-                                Calendario
-                            </Link>
-                          );
-                        })()}
+                        <Link href="/trading/calendario" className={`${styles.navItem} ${pathname.startsWith('/trading/calendario') ? styles.active : ''}`}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+                                <rect x="1" y="2" width="14" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                                <path d="M1 6h14" stroke="currentColor" strokeWidth="1.5"/>
+                                <path d="M5 1v2M11 1v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                <rect x="4" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
+                                <rect x="7" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
+                                <rect x="10" y="9" width="2" height="2" rx="0.5" fill="currentColor"/>
+                            </svg>
+                            Calendario
+                        </Link>
 
                         <Link href="/trading/commissions" className={`${styles.navItem} ${pathname === '/trading/commissions' ? styles.active : ''}`}>
                             <Users size={20} /> Comisiones
