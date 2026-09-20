@@ -7,6 +7,7 @@ import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Respon
 import { useActiveAccount } from '@/components/trading/AccountContext';
 import SetupManagerModal from '@/components/trading/SetupManagerModal';
 import SetupsAnalytics from '@/components/trading/SetupsAnalytics';
+import UpgradeBanner from '@/components/UpgradeBanner';
 import styles from './page.module.css';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -61,6 +62,14 @@ export default function TradingDashboard() {
     const [analysisFilterValue, setAnalysisFilterValue] = useState('');
     const [sideFilter, setSideFilter] = useState('ALL');
     const [opsLimit, setOpsLimit] = useState(null);
+    const [planStatus, setPlanStatus] = useState(null);
+
+    useEffect(() => {
+      fetch('/api/trading/plan-check')
+        .then(r => r.json())
+        .then(data => setPlanStatus(data))
+        .catch(() => {})
+    }, []);
 
     useEffect(() => {
       fetch('/api/trading/operations/count')
@@ -169,6 +178,8 @@ export default function TradingDashboard() {
                     <p className={styles.subtitle}>Resumen de tu rendimiento y consistencia.</p>
                 </div>
             </header>
+
+            <UpgradeBanner planStatus={planStatus} />
 
             {opsLimit && !opsLimit.isPro && opsLimit.warningLevel && (
               <div style={{

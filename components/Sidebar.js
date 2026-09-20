@@ -252,6 +252,20 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                 )}
             </nav>
             <div className={styles.userSection}>
+                {/* Botón upgrade en el sidebar para plan free */}
+                {!['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(plan) && (
+                  <div style={{ padding: '12px 16px', margin: '8px', background: 'rgba(29,158,117,0.1)', border: '0.5px solid #1D9E75', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: '#1D9E75', fontWeight: '500', marginBottom: '6px' }}>⭐ Actualizar a Pro</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', marginBottom: '8px', lineHeight: '1.4' }}>
+                      Operaciones ilimitadas, reportes y más.
+                    </div>
+                    <a href="https://app.travitrade.com/upgrade"
+                      style={{ display: 'block', padding: '7px', background: '#1D9E75', borderRadius: '6px', color: '#fff', fontSize: '12px', fontWeight: '500', textDecoration: 'none', textAlign: 'center' }}>
+                      $5.99/mes →
+                    </a>
+                  </div>
+                )}
+
                 <div style={{ padding: '12px 16px', borderTop: '0.5px solid #1a3a24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                   <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#0f2e1a', border: '0.5px solid #1D9E75', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#1D9E75', fontWeight: '500', flexShrink: 0 }}>
                     {user?.username?.charAt(0)?.toUpperCase() || 'T'}
