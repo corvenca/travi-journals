@@ -187,7 +187,7 @@ export default function TradingDashboard() {
                       : `Has usado ${opsLimit.count} de 30 operaciones disponibles.`}
                   </div>
                 </div>
-                <a href="https://app.travitrade.com/planes"
+                <a href="https://travitrade.com/pages/precios.html"
                   style={{ padding: '7px 16px', background: opsLimit.warningLevel === 'critical' ? '#1D9E75' : '#F59E0B', border: 'none', borderRadius: '8px', color: opsLimit.warningLevel === 'critical' ? '#fff' : '#0a1a0f', fontSize: '12px', fontWeight: '500', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                   Actualizar a Pro →
                 </a>
@@ -612,7 +612,7 @@ export default function TradingDashboard() {
             {plan === 'free' && (
               <div style={{ background: '#0d1f14', border: '0.5px solid #1a3a24', borderRadius: '10px', padding: '20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '13px', color: 'rgba(159,225,203,0.5)', marginBottom: '8px' }}>🔒 Análisis de Setups disponible en Plan Pro</div>
-                <a href="https://app.travitrade.com/registro?plan=pro" style={{ color: '#1D9E75', fontSize: '12px' }}>Actualizar a Pro →</a>
+                <a href="https://travitrade.com/pages/precios.html" style={{ color: '#1D9E75', fontSize: '12px' }}>Actualizar a Pro →</a>
               </div>
             )}
 

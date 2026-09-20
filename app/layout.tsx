@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AccountProvider } from '@/components/trading/AccountContext'
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { AccountProvider } from '@/components/trading/AccountContext';
 
 export const metadata: Metadata = {
   title: 'Travi Journals',
@@ -28,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col`}>
+      <body className="h-full antialiased min-h-full flex flex-col">
         <AccountProvider>
           {children}
         </AccountProvider>

@@ -14,6 +14,18 @@ const navItems = [
     { href: '/usuarios', label: 'Usuarios', icon: UserCog },
 ];
 
+const getPlanLabel = (plan) => {
+  if (plan === 'pro' || plan === 'free_full') return '⭐ PRO'
+  if (plan === 'pro_monthly') return '⭐ PRO Mensual'
+  if (plan === 'pro_annual') return '⭐ PRO Anual'
+  return 'FREE'
+}
+
+const getPlanColor = (plan) => {
+  if (plan === 'pro' || plan === 'free_full' || plan === 'pro_monthly' || plan === 'pro_annual') return '#1D9E75'
+  return 'rgba(159,225,203,0.4)'
+}
+
 export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -195,7 +207,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                         </Link>
 
                         {(() => {
-                          const isPro = plan === 'pro' || plan === 'free_full' || plan === 'admin';
+                          const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(plan);
                           return !isPro ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(159,225,203,0.3)', fontSize: '13px', cursor: 'not-allowed', position: 'relative' }}
                               title="Disponible en Plan Pro">
@@ -214,7 +226,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                         })()}
 
                         {(() => {
-                          const isPro = plan === 'pro' || plan === 'free_full' || plan === 'admin';
+                          const isPro = ['pro', 'free_full', 'pro_monthly', 'pro_annual', 'admin'].includes(plan);
                           return !isPro ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(159,225,203,0.3)', fontSize: '13px', cursor: 'not-allowed' }}
                               title="Disponible en Plan Pro">
@@ -261,8 +273,8 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '500', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username || 'Trader'}</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.4)', textTransform: 'capitalize' }}>
-                      {plan === 'free' ? `Plan Free: ${opsCount}/30 operaciones usadas` : `Plan ${plan}`}
+                    <div style={{ fontSize: '11px', color: getPlanColor(plan), fontWeight: plan !== 'free' ? '600' : 'normal' }}>
+                      {plan === 'free' ? `Plan Free: ${opsCount}/30 operaciones usadas` : getPlanLabel(plan)}
                     </div>
                   </div>
                 </div>

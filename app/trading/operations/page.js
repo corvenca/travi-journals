@@ -355,7 +355,7 @@ export default function TradingOperationsLog() {
                         Has usado {opsLimit.count} de 30 registros. No puedes eliminar operaciones en este nivel.
                       </div>
                     </div>
-                    <a href="https://app.travitrade.com/planes"
+                    <a href="https://travitrade.com/pages/precios.html"
                       style={{ padding: '7px 16px', background: '#1D9E75', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                       Actualizar a Pro →
                     </a>
@@ -375,7 +375,7 @@ export default function TradingOperationsLog() {
                         Plan Free: {opsLimit.count}/30 operaciones usadas.
                       </div>
                     </div>
-                    <a href="https://app.travitrade.com/planes"
+                    <a href="https://travitrade.com/pages/precios.html"
                       style={{ padding: '7px 16px', background: '#F59E0B', border: 'none', borderRadius: '8px', color: '#0a1a0f', fontSize: '12px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                       Ver Plan Pro →
                     </a>
