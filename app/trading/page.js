@@ -13,6 +13,22 @@ export default function TradingAccountsPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        fetch('/api/auth/me')
+            .then(r => r.json())
+            .then(data => {
+                setCurrentUser(data);
+                setFormData(prev => ({
+                    ...prev,
+                    traderName: prev.traderName || `${data.nombre} ${data.apellido || ''}`.trim(),
+                    traderEmail: prev.traderEmail || data.email || ''
+                }));
+            })
+            .catch(() => {});
+    }, []);
+    
     // Check URL params for auto-opening modal
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -122,7 +138,18 @@ export default function TradingAccountsPage() {
             if (res.ok) {
                 await fetchAccounts();
                 setShowModal(false);
-                setFormData({ id: null, name: '', broker: '', type: 'REAL', initialCapital: '', riskPercent: '1', traderName: '', traderEmail: '', traderAddress: '', accountNumber: '' });
+                setFormData({
+                    id: null,
+                    name: '',
+                    broker: '',
+                    type: 'REAL',
+                    initialCapital: '',
+                    riskPercent: '1',
+                    traderName: currentUser ? `${currentUser.nombre} ${currentUser.apellido || ''}`.trim() : '',
+                    traderEmail: currentUser?.email || '',
+                    traderAddress: '',
+                    accountNumber: ''
+                });
             } else {
                 alert('Error al guardar la cuenta');
             }
@@ -318,6 +345,7 @@ export default function TradingAccountsPage() {
                                         type="email" 
                                         value={formData.traderEmail} 
                                         onChange={(e) => setFormData({...formData, traderEmail: e.target.value})} 
+                                        placeholder={currentUser?.email || 'correo@ejemplo.com'}
                                     />
                                 </div>
                             </div>
