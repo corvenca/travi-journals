@@ -47,20 +47,24 @@ export async function DELETE(request, { params }) {
     }
 
     // Primero desasociar setup_id en operaciones de esta cuenta
+    console.log('Desasociando setup_id...')
     await pool.query(
       'UPDATE trading_operations SET setup_id = NULL WHERE account_id = $1 AND user_id = $2',
       [id, user.userId]
     )
 
-    // Eliminar comisiones y operaciones de la cuenta
+    console.log('Eliminando comisiones...')
     await pool.query('DELETE FROM trading_commissions WHERE account_id = $1 AND user_id = $2', [id, user.userId])
+
+    console.log('Eliminando operaciones...')
     await pool.query('DELETE FROM trading_operations WHERE account_id = $1 AND user_id = $2', [id, user.userId])
 
     // NO eliminar setups — son globales del usuario
 
-    // Eliminar la cuenta
+    console.log('Eliminando cuenta...')
     await pool.query('DELETE FROM trading_accounts WHERE id = $1 AND user_id = $2', [id, user.userId])
 
+    console.log('Cuenta eliminada exitosamente')
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
