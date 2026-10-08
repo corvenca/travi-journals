@@ -46,23 +46,33 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Cuenta no encontrada' }, { status: 404 })
     }
 
-    // Primero desasociar setup_id en operaciones de esta cuenta
+    // 1. Desasociar setup_id en operaciones de esta cuenta
     console.log('Desasociando setup_id...')
     await pool.query(
       'UPDATE trading_operations SET setup_id = NULL WHERE account_id = $1 AND user_id = $2',
       [id, user.userId]
     )
+    console.log('Setup_id desasociado')
 
+    // 2. Eliminar comisiones
     console.log('Eliminando comisiones...')
     await pool.query('DELETE FROM trading_commissions WHERE account_id = $1 AND user_id = $2', [id, user.userId])
+    console.log('Comisiones eliminadas')
 
+    // 3. Eliminar operaciones
     console.log('Eliminando operaciones...')
     await pool.query('DELETE FROM trading_operations WHERE account_id = $1 AND user_id = $2', [id, user.userId])
+    console.log('Operaciones eliminadas')
 
-    // NO eliminar setups — son globales del usuario
+    // 4. Desasociar setups de esta cuenta (no eliminarlos)
+    console.log('Desasociando setups...')
+    await pool.query('UPDATE trading_setups SET account_id = NULL WHERE account_id = $1 AND user_id = $2', [id, user.userId])
+    console.log('Setups desasociados')
 
+    // 5. Eliminar la cuenta
     console.log('Eliminando cuenta...')
     await pool.query('DELETE FROM trading_accounts WHERE id = $1 AND user_id = $2', [id, user.userId])
+    console.log('Cuenta eliminada')
 
     console.log('Cuenta eliminada exitosamente')
     return NextResponse.json({ success: true })
