@@ -13,6 +13,11 @@ export default function TradingAccountsPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     
+    const [showDeleteAccount, setShowDeleteAccount] = useState(null);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [deleteError, setDeleteError] = useState('');
+    const [deleting, setDeleting] = useState(false);
+    
     const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
@@ -77,21 +82,31 @@ export default function TradingAccountsPage() {
         router.push(`/trading/dashboard`);
     };
 
-    const handleDelete = async (e, id) => {
-        e.stopPropagation();
-        if (confirm('¿Estás seguro de eliminar esta cuenta? Se perderán sus historiales.')) {
-            try {
-                const res = await fetch(`/api/trading/accounts?id=${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    if (activeAccount?.id === id) setAccount(null);
-                    await fetchAccounts();
-                } else {
-                    alert('Error al eliminar cuenta');
+    const handleDeleteAccount = async () => {
+        if (!deletePassword) { setDeleteError('Ingresa tu contraseña'); return }
+        setDeleting(true)
+        setDeleteError('')
+        try {
+            const res = await fetch(`/api/trading/accounts/${showDeleteAccount.id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: deletePassword })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setShowDeleteAccount(null)
+                setDeletePassword('')
+                fetchAccounts()
+                if (activeAccount?.id === showDeleteAccount.id) {
+                    setAccount(null)
                 }
-            } catch (err) {
-                console.error(err);
+            } else {
+                setDeleteError(data.error || 'Error al eliminar')
             }
+        } catch {
+            setDeleteError('Error de conexión')
         }
+        setDeleting(false)
     };
 
     const handleEdit = (e, acc) => {
@@ -211,8 +226,11 @@ export default function TradingAccountsPage() {
                                     <button className={styles.btnIcon} onClick={(e) => handleEdit(e, acc)}>
                                         E
                                     </button>
-                                    <button className={styles.btnIconDelete} onClick={(e) => handleDelete(e, acc.id)}>
-                                        X
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setShowDeleteAccount(acc); setDeleteError(''); setDeletePassword('') }}
+                                        style={{ background: 'transparent', border: 'none', color: '#E24B4A', fontSize: '11px', cursor: 'pointer', padding: '2px 6px', opacity: 0.7 }}
+                                        title="Eliminar cuenta">
+                                        🗑
                                     </button>
                                 </div>
                             </div>
@@ -379,6 +397,50 @@ export default function TradingAccountsPage() {
                         </form>
                     </div>
                 </div>
+            )}
+            
+            {showDeleteAccount && (
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                <div style={{ background: '#0d1f14', border: '0.5px solid #E24B4A', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '400px' }}>
+                  <div style={{ fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>⚠️</div>
+                  <h2 style={{ fontSize: '17px', fontWeight: '500', color: '#fff', marginBottom: '8px', textAlign: 'center' }}>
+                    ¿Eliminar cuenta?
+                  </h2>
+                  <p style={{ fontSize: '13px', color: 'rgba(159,225,203,0.6)', marginBottom: '6px', textAlign: 'center', lineHeight: '1.6' }}>
+                    Vas a eliminar permanentemente:
+                  </p>
+                  <div style={{ background: '#0a1a0f', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>{showDeleteAccount.name}</div>
+                    <div style={{ fontSize: '12px', color: '#E24B4A', marginTop: '4px' }}>
+                      Se eliminarán todas las operaciones y setups de esta cuenta
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', letterSpacing: '1px', marginBottom: '6px', display: 'block' }}>
+                      INGRESA TU CONTRASEÑA PARA CONFIRMAR
+                    </label>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={e => setDeletePassword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleDeleteAccount()}
+                      placeholder="Tu contraseña de acceso"
+                      style={{ width: '100%', background: '#0a1a0f', border: `0.5px solid ${deleteError ? '#E24B4A' : '#1a3a24'}`, borderRadius: '8px', padding: '10px 12px', color: '#9FE1CB', fontSize: '13px', outline: 'none' }}
+                    />
+                    {deleteError && <div style={{ fontSize: '12px', color: '#E24B4A', marginTop: '5px' }}>{deleteError}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleDeleteAccount} disabled={deleting || !deletePassword}
+                      style={{ flex: 1, padding: '10px', background: '#E24B4A', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', opacity: deleting || !deletePassword ? 0.6 : 1 }}>
+                      {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                    </button>
+                    <button onClick={() => { setShowDeleteAccount(null); setDeletePassword(''); setDeleteError('') }}
+                      style={{ flex: 1, padding: '10px', background: 'transparent', border: '0.5px solid #1a3a24', borderRadius: '8px', color: '#9FE1CB', fontSize: '13px', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
         </div>
     );
