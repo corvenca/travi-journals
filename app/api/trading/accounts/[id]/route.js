@@ -16,16 +16,23 @@ export async function DELETE(request, { params }) {
     }
 
     // Verificar contraseña
+    console.log('DELETE account - userId:', user.userId, 'accountId:', id)
+    
     const userRes = await pool.query(
       'SELECT password_hash FROM users WHERE id = $1',
       [user.userId]
     )
+
+    console.log('User found:', userRes.rows.length > 0)
+    console.log('password_hash exists:', !!userRes.rows[0]?.password_hash)
 
     if (userRes.rows.length === 0) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
     const validPassword = await bcrypt.compare(password, userRes.rows[0].password_hash)
+    console.log('Password valid:', validPassword)
+
     if (!validPassword) {
       return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 })
     }
