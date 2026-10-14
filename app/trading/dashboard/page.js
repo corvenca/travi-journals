@@ -11,23 +11,30 @@ import UpgradeBanner from '@/components/UpgradeBanner';
 import styles from './page.module.css';
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const d = payload[0]?.payload
-    return (
-      <div style={{ background: '#0d1f14', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '10px 14px', fontSize: '12px' }}>
-        <div style={{ color: '#9FE1CB', marginBottom: '4px' }}>{label}</div>
-        <div style={{ color: d?.netProfit >= 0 ? '#1D9E75' : '#E24B4A', fontWeight: '500', fontSize: '14px' }}>
-          PNL Acumulado: {d?.netProfit >= 0 ? '+' : ''}${d?.netProfit?.toFixed(2)}
-        </div>
-        {d?.pnl !== undefined && (
-          <div style={{ color: d?.pnl >= 0 ? '#1D9E75' : '#E24B4A', marginTop: '4px' }}>
-            Esta operación: {d?.pnl >= 0 ? '+' : ''}${d?.pnl?.toFixed(2)}
-          </div>
-        )}
+  if (!active || !payload?.length) return null
+  const val = payload[0]?.value ?? 0
+  const pnl = payload[0]?.payload?.pnl ?? 0
+  const isPos = val >= 0
+  return (
+    <div style={{
+      background: '#0d1f14',
+      border: `0.5px solid ${isPos ? '#1D9E75' : '#E24B4A'}`,
+      borderRadius: '8px',
+      padding: '10px 14px',
+      fontSize: '12px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+    }}>
+      <div style={{ color: 'rgba(159,225,203,0.5)', marginBottom: '6px', fontSize: '11px' }}>{label}</div>
+      <div style={{ color: isPos ? '#3b82f6' : '#E24B4A', fontWeight: '600', fontSize: '14px', fontFamily: 'monospace' }}>
+        {isPos ? '+' : ''}{val.toFixed(2)} USD
       </div>
-    )
-  }
-  return null
+      {pnl !== 0 && (
+        <div style={{ color: pnl >= 0 ? '#1D9E75' : '#E24B4A', fontSize: '11px', marginTop: '4px' }}>
+          {pnl >= 0 ? '▲' : '▼'} {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} esta sesión
+        </div>
+      )}
+    </div>
+  )
 }
 
 const CustomDot = (props) => {
@@ -393,22 +400,43 @@ export default function TradingDashboard() {
                 <div className={styles.chartContainer}>
                     {metrics?.equityCurve?.length > 1 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <ComposedChart data={preparedCurve} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                          <ComposedChart data={preparedCurve} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                             <defs>
                               <linearGradient id="gradPositivo" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25}/>
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
                               </linearGradient>
                               <linearGradient id="gradNegativo" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#E24B4A" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#E24B4A" stopOpacity={0}/>
+                                <stop offset="0%" stopColor="#E24B4A" stopOpacity={0.25}/>
+                                <stop offset="100%" stopColor="#E24B4A" stopOpacity={0}/>
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1a3a24" vertical={false} />
-                            <XAxis dataKey="curveKey" stroke="#1a3a24" tick={{ fontSize: 10, fill: 'rgba(159,225,203,0.5)' }} minTickGap={30} />
-                            <YAxis stroke="#1a3a24" tick={{ fontSize: 11, fill: 'rgba(159,225,203,0.5)' }} tickFormatter={(v) => v >= 0 ? '+$' + v.toFixed(0) : '-$' + Math.abs(v).toFixed(0)} />
-                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="4 4" />
-                            <Tooltip content={<CustomTooltip />} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,58,36,0.8)" vertical={false} />
+                            <XAxis
+                              dataKey="curveKey"
+                              stroke="transparent"
+                              tick={{ fontSize: 10, fill: 'rgba(159,225,203,0.4)', fontFamily: 'monospace' }}
+                              tickLine={false}
+                              axisLine={false}
+                              minTickGap={40}
+                              interval="preserveStartEnd"
+                            />
+                            <YAxis
+                              stroke="transparent"
+                              tick={{ fontSize: 10, fill: 'rgba(159,225,203,0.4)', fontFamily: 'monospace' }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(v) => {
+                                if (Math.abs(v) >= 1000) return (v >= 0 ? '+$' : '-$') + (Math.abs(v)/1000).toFixed(1) + 'k'
+                                return (v >= 0 ? '+$' : '-$') + Math.abs(v).toFixed(0)
+                              }}
+                              width={56}
+                            />
+                            <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeDasharray="4 4" />
+                            <Tooltip
+                              content={<CustomTooltip />}
+                              cursor={{ stroke: 'rgba(159,225,203,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                            />
                             <Area
                               type="monotone"
                               dataKey="netProfit"
@@ -417,15 +445,14 @@ export default function TradingDashboard() {
                               fillOpacity={1}
                               activeDot={false}
                               dot={false}
-                              baseLine={0}
                             />
                             <Line
                               type="monotone"
                               dataKey="netProfit"
                               stroke={curveColor}
-                              strokeWidth={2}
-                              dot={<CustomDot />}
-                              activeDot={{ r: 5, fill: curveColor }}
+                              strokeWidth={2.5}
+                              dot={false}
+                              activeDot={{ r: 4, fill: curveColor, strokeWidth: 2, stroke: '#0a1a0f' }}
                             />
                           </ComposedChart>
                         </ResponsiveContainer>

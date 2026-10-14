@@ -189,23 +189,23 @@ export async function GET(request) {
               else metrics.breakEvenTrades++;
             }
 
+            const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
             let curveGroupingKey = '';
 
-            if (range === '7D' || range === '30D' || range === '90D') {
+            if (range === '7D' || range === '30D' || range === '90D' || (range && range.match(/^\d{4}-\d{2}$/))) {
                 const d = new Date(op.date + 'T00:00:00');
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                curveGroupingKey = `${day}/${month}`;
+                const day = d.getDate();
+                const month = d.getMonth() + 1;
+                curveGroupingKey = `${day} ${MESES_ABREV[month - 1]}`;
             } else if (range === 'YTD') {
                 const d = new Date(op.date + 'T00:00:00');
-                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                curveGroupingKey = months[d.getMonth()];
+                curveGroupingKey = MESES_ABREV[d.getMonth()];
             } else {
                 const d = new Date(op.date + 'T00:00:00');
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const year = String(d.getFullYear()).slice(2);
-                curveGroupingKey = `${day}/${month}/${year}`;
+                const day = d.getDate();
+                const month = d.getMonth() + 1;
+                const year = String(d.getFullYear()).slice(-2);
+                curveGroupingKey = `${day} ${MESES_ABREV[month - 1]} '${year}`;
             }
 
             if (!groupedPnls[curveGroupingKey]) groupedPnls[curveGroupingKey] = 0;
@@ -257,7 +257,38 @@ export async function GET(request) {
         }];
 
         let runningEquity = initialCapital;
-        const sortedGroups = Object.keys(groupedPnls).sort();
+        const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const sortedGroups = Object.keys(groupedPnls).sort((a, b) => {
+            // Formato DD/MM/YYYY o DD/MM/YY
+            if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(a)) {
+                const parseDate = (s) => {
+                    const parts = s.split('/');
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
+                    return new Date(year, month, day).getTime();
+                };
+                return parseDate(a) - parseDate(b);
+            }
+            // Formato "15 Sep" o "15 Sep '24"
+            const matchA = a.match(/^(\d{1,2})\s+([A-Za-z]{3})(?:\s+'?(\d{2,4}))?$/);
+            const matchB = b.match(/^(\d{1,2})\s+([A-Za-z]{3})(?:\s+'?(\d{2,4}))?$/);
+            if (matchA && matchB) {
+                const parseSpan = (m) => {
+                    const day = parseInt(m[1]);
+                    const month = MESES.indexOf(m[2]);
+                    const rawYear = m[3] ? parseInt(m[3]) : new Date().getFullYear();
+                    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+                    return new Date(year, month !== -1 ? month : 0, day).getTime();
+                };
+                return parseSpan(matchA) - parseSpan(matchB);
+            }
+            // Formato meses en español (YTD)
+            const ia = MESES.indexOf(a);
+            const ib = MESES.indexOf(b);
+            if (ia !== -1 && ib !== -1) return ia - ib;
+            return a.localeCompare(b);
+        });
         sortedGroups.forEach(k => {
             runningEquity += groupedPnls[k];
             metrics.equityCurve.push({
