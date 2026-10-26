@@ -730,7 +730,11 @@ export default function TradingDashboard() {
 
               {/* Resumen por dirección (Clickable Filters) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-                {(analysis?.byDirection || []).map(dir => {
+                {(analysis?.byDirection || []).slice().sort((a, b) => {
+                  const wrA = a.total > 0 ? (a.wins / a.total) : 0
+                  const wrB = b.total > 0 ? (b.wins / b.total) : 0
+                  return wrB - wrA
+                }).map(dir => {
                   const winRate = dir.total > 0 ? ((dir.wins / dir.total) * 100).toFixed(1) : 0
                   const isLong = dir.side === 'LONG'
                   const pnlVal = parseFloat(dir.total_pnl || 0)
