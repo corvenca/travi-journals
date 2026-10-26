@@ -823,7 +823,11 @@ export default function TradingDashboard() {
                   <tbody>
                     {(analysis?.bySetupDirection || [])
                       .filter(s => sideFilter === 'ALL' || s.side === sideFilter)
-                      .sort((a, b) => parseInt(b.total) - parseInt(a.total))
+                      .sort((a, b) => {
+                        const wrA = a.total > 0 ? (a.wins / a.total) : 0
+                        const wrB = b.total > 0 ? (b.wins / b.total) : 0
+                        return wrB - wrA
+                      })
                       .map((s, i) => {
                         const wr = s.total > 0 ? ((s.wins / s.total) * 100).toFixed(1) : 0
                         const pnlVal = parseFloat(s.total_pnl || 0)
