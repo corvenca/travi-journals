@@ -39,6 +39,13 @@ export default function TradingOperationsLog() {
     const [resultType, setResultType] = useState('');
     const [highlightedDate, setHighlightedDate] = useState(null);
 
+    // Filters state
+    const [filterDateFrom, setFilterDateFrom] = useState('');
+    const [filterDateTo, setFilterDateTo] = useState('');
+    const [filterSetupId, setFilterSetupId] = useState('');
+    const [filterSide, setFilterSide] = useState('');
+    const [totalCount, setTotalCount] = useState(0);
+
     // Transfer states
     const [selectedOps, setSelectedOps] = useState([]);
     const [showTransferModal, setShowTransferModal] = useState(false);
@@ -76,6 +83,7 @@ export default function TradingOperationsLog() {
           setSelectMode(false)
           setTargetAccount('')
           fetchData()
+          fetchTotalCount()
           setTimeout(() => setTransferSuccess(''), 3000)
         } else {
           alert('Error: ' + data.error)
@@ -139,24 +147,23 @@ export default function TradingOperationsLog() {
     const riesgoVal = parseFloat(formData.riesgo) || 0;
     const calculatedRR = riesgoVal > 0 ? (pnlVal / riesgoVal).toFixed(2) : '0.00';
 
-    useEffect(() => {
-        if (!isLoaded) return;
-        if (!activeAccount) {
-            router.push('/trading');
-            return;
-        }
-
-        fetchData();
-        fetchSetups();
-    }, [activeAccount, isLoaded]);
-
     const fetchData = async () => {
+        if (!activeAccount) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/trading/operations?accountId=${activeAccount.id}`);
+            const params = new URLSearchParams({ accountId: String(activeAccount.id) });
+            if (filterDateFrom) params.append('dateFrom', filterDateFrom);
+            if (filterDateTo) params.append('dateTo', filterDateTo);
+            if (filterSetupId) params.append('setupId', filterSetupId);
+            if (filterSide) params.append('side', filterSide);
+
+            const res = await fetch(`/api/trading/operations?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setOperations(data);
+                if (!filterDateFrom && !filterDateTo && !filterSetupId && !filterSide) {
+                    setTotalCount(data.length);
+                }
             }
         } catch (error) {
             console.error(error);
@@ -165,17 +172,43 @@ export default function TradingOperationsLog() {
         }
     };
 
-    const fetchSetups = async () => {
+    const fetchTotalCount = async () => {
+        if (!activeAccount) return;
         try {
-            const accountId = activeAccount?.id;
-            const res = await fetch(`/api/trading/setups${accountId ? `?accountId=${accountId}` : ''}`);
+            const res = await fetch(`/api/trading/operations?accountId=${activeAccount.id}`);
             if (res.ok) {
                 const data = await res.json();
-                setSetups(data);
+                setTotalCount(data.length);
             }
-        } catch (err) {
-            console.error(err);
-            setSetups([]);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        if (!activeAccount) {
+            router.push('/trading');
+            return;
+        }
+
+        fetchSetups();
+        fetchTotalCount();
+    }, [activeAccount, isLoaded]);
+
+    useEffect(() => {
+        if (!isLoaded || !activeAccount) return;
+        fetchData();
+    }, [activeAccount, isLoaded, filterDateFrom, filterDateTo, filterSetupId, filterSide]);
+
+    const handleClearFilters = () => {
+        setFilterDateFrom('');
+        setFilterDateTo('');
+        setFilterSetupId('');
+        setFilterSide('');
+        setSetupNameFilter('');
+        if (typeof window !== "undefined") {
+            window.history.replaceState({}, '', window.location.pathname);
         }
     };
 
@@ -270,6 +303,7 @@ export default function TradingOperationsLog() {
             if (res.ok) {
                 setShowModal(false);
                 fetchData();
+                fetchTotalCount();
             } else {
                 const responseData = await res.json();
                 alert('Error: ' + responseData.error);
@@ -294,6 +328,7 @@ export default function TradingOperationsLog() {
                 });
                 if(res.ok) {
                     fetchData();
+                    fetchTotalCount();
                 } else {
                     const data = await res.json();
                     alert(data.error);
@@ -319,7 +354,7 @@ export default function TradingOperationsLog() {
                     <h1 className={styles.title}>Bitácora de Operaciones</h1>
                     <p className={styles.subtitle}>
                         Cuenta Activa: <strong>{activeAccount?.name}</strong> 
-                        <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>({filteredOperations.length} operaciones registradas)</span>
+                        <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>({totalCount} operaciones registradas)</span>
                     </p>
                 </div>
                 <button
@@ -383,6 +418,127 @@ export default function TradingOperationsLog() {
                 )}
               </>
             )}
+
+            {/* BARRA DE FILTROS */}
+            <div style={{
+              background: '#0d1f14',
+              border: '1px solid #1a3a24',
+              borderRadius: '10px',
+              padding: '14px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '12px',
+              alignItems: 'flex-end'
+            }}>
+              <div>
+                <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.6)', display: 'block', marginBottom: '4px', fontWeight: '500' }}>Desde</label>
+                <input 
+                  type="date" 
+                  value={filterDateFrom} 
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  style={{
+                    background: '#0a1a0f',
+                    border: '0.5px solid #1a3a24',
+                    borderRadius: '6px',
+                    padding: '7px 10px',
+                    color: '#9FE1CB',
+                    fontSize: '13px',
+                    outline: 'none',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.6)', display: 'block', marginBottom: '4px', fontWeight: '500' }}>Hasta</label>
+                <input 
+                  type="date" 
+                  value={filterDateTo} 
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  style={{
+                    background: '#0a1a0f',
+                    border: '0.5px solid #1a3a24',
+                    borderRadius: '6px',
+                    padding: '7px 10px',
+                    color: '#9FE1CB',
+                    fontSize: '13px',
+                    outline: 'none',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.6)', display: 'block', marginBottom: '4px', fontWeight: '500' }}>Setup</label>
+                <select 
+                  value={filterSetupId} 
+                  onChange={(e) => setFilterSetupId(e.target.value)}
+                  style={{
+                    background: '#0a1a0f',
+                    border: '0.5px solid #1a3a24',
+                    borderRadius: '6px',
+                    padding: '7px 10px',
+                    color: '#9FE1CB',
+                    fontSize: '13px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">Todos</option>
+                  <option value="none">Sin setup</option>
+                  {setups.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'rgba(159,225,203,0.6)', display: 'block', marginBottom: '4px', fontWeight: '500' }}>Entrada</label>
+                <select 
+                  value={filterSide} 
+                  onChange={(e) => setFilterSide(e.target.value)}
+                  style={{
+                    background: '#0a1a0f',
+                    border: '0.5px solid #1a3a24',
+                    borderRadius: '6px',
+                    padding: '7px 10px',
+                    color: '#9FE1CB',
+                    fontSize: '13px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">Todas</option>
+                  <option value="LONG">Compra (LONG)</option>
+                  <option value="SHORT">Venta (SHORT)</option>
+                </select>
+              </div>
+
+              {(filterDateFrom || filterDateTo || filterSetupId || filterSide || setupNameFilter) && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  style={{
+                    background: 'transparent',
+                    border: '0.5px solid #1a3a24',
+                    borderRadius: '6px',
+                    padding: '7px 14px',
+                    color: '#E24B4A',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Limpiar filtros
+                </button>
+              )}
+
+              <div style={{ marginLeft: 'auto', fontSize: '13px', color: 'rgba(159,225,203,0.7)', alignSelf: 'center', whiteSpace: 'nowrap' }}>
+                Mostrando <strong style={{ color: '#1D9E75' }}>{filteredOperations.length}</strong> de <strong style={{ color: '#fff' }}>{totalCount}</strong> operaciones
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
               <button onClick={() => { setSelectMode(!selectMode); setSelectedOps([]) }}

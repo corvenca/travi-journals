@@ -10,8 +10,12 @@ export async function GET(request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const limit = parseInt(searchParams.get('limit') || '50', 10);
+        const limitParam = searchParams.get('limit');
         const accountId = searchParams.get('accountId');
+        const dateFrom = searchParams.get('dateFrom');
+        const dateTo = searchParams.get('dateTo');
+        const setupId = searchParams.get('setupId');
+        const side = searchParams.get('side');
 
         let query = `
             SELECT 
@@ -34,8 +38,39 @@ export async function GET(request) {
             query += ` AND o.account_id = $${params.length}`;
         }
 
-        params.push(limit);
-        query += ` ORDER BY o.date DESC, o.id DESC LIMIT $${params.length}`;
+        if (dateFrom) {
+            params.push(dateFrom);
+            query += ` AND o.date >= $${params.length}`;
+        }
+
+        if (dateTo) {
+            params.push(dateTo);
+            query += ` AND o.date <= $${params.length}`;
+        }
+
+        if (setupId) {
+            if (setupId === 'none') {
+                query += ` AND o.setup_id IS NULL`;
+            } else {
+                params.push(parseInt(setupId, 10));
+                query += ` AND o.setup_id = $${params.length}`;
+            }
+        }
+
+        if (side && (side === 'LONG' || side === 'SHORT')) {
+            params.push(side);
+            query += ` AND o.side = $${params.length}`;
+        }
+
+        query += ` ORDER BY o.date DESC, o.id DESC`;
+
+        if (limitParam) {
+            const limit = parseInt(limitParam, 10);
+            if (!isNaN(limit) && limit > 0) {
+                params.push(limit);
+                query += ` LIMIT $${params.length}`;
+            }
+        }
 
         const result = await pool.query(query, params);
         const mappedRows = result.rows.map(row => ({
