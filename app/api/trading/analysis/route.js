@@ -11,15 +11,21 @@ export async function GET(request) {
     const accountId = searchParams.get('accountId')
     const filterType = searchParams.get('filterType') || 'all' // 'all', 'week', 'month'
     const filterValue = searchParams.get('filterValue') || ''
+    const dateFrom = searchParams.get('dateFrom') || null
+    const dateTo = searchParams.get('dateTo') || null
 
     if (!accountId) return NextResponse.json({ error: 'accountId requerido' }, { status: 400 })
 
     let dateFilter = ''
-    if (filterType === 'month' && filterValue) {
-      dateFilter = `AND date >= '${filterValue}-01' AND date <= '${filterValue}-31'`
-    } else if (filterType === 'week' && filterValue) {
-      dateFilter = `AND date >= '${filterValue}'::date AND date < '${filterValue}'::date + INTERVAL '7 days'`
+    if (!dateFrom && !dateTo) {
+      if (filterType === 'month' && filterValue) {
+        dateFilter = `AND date >= '${filterValue}-01' AND date <= '${filterValue}-31'`
+      } else if (filterType === 'week' && filterValue) {
+        dateFilter = `AND date >= '${filterValue}'::date AND date < '${filterValue}'::date + INTERVAL '7 days'`
+      }
     }
+
+    const queryParams = [user.userId, accountId, dateFrom, dateTo]
 
     // Análisis por dirección (LONG/SHORT)
     const directionRes = await pool.query(`
@@ -33,10 +39,13 @@ export async function GET(request) {
         MAX(o.pnl) as best_trade,
         MIN(o.pnl) as worst_trade
       FROM trading_operations o
-      WHERE o.user_id = $1 AND o.account_id = $2 ${dateFilter}
+      WHERE o.user_id = $1 AND o.account_id = $2
+        AND ($3::text IS NULL OR o.date >= $3)
+        AND ($4::text IS NULL OR o.date <= $4)
+        ${dateFilter}
       GROUP BY o.side
       ORDER BY total DESC
-    `, [user.userId, accountId])
+    `, queryParams)
 
     // Análisis por setup con dirección
     const setupRes = await pool.query(`
@@ -53,10 +62,13 @@ export async function GET(request) {
         SUM(o.pnl) as total_pnl
       FROM trading_operations o
       LEFT JOIN trading_setups s ON o.setup_id = s.id
-      WHERE o.user_id = $1 AND o.account_id = $2 ${dateFilter}
+      WHERE o.user_id = $1 AND o.account_id = $2
+        AND ($3::text IS NULL OR o.date >= $3)
+        AND ($4::text IS NULL OR o.date <= $4)
+        ${dateFilter}
       GROUP BY o.setup_id, s.name, s.direction, s.color, o.side
       ORDER BY total DESC
-    `, [user.userId, accountId])
+    `, queryParams)
 
     // Meses disponibles
     const monthsRes = await pool.query(`

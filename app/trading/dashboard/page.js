@@ -70,9 +70,13 @@ export default function TradingDashboard() {
     const [analysis, setAnalysis] = useState(null);
     const [analysisFilter, setAnalysisFilter] = useState('all');
     const [analysisFilterValue, setAnalysisFilterValue] = useState('');
+    const [entryDateFrom, setEntryDateFrom] = useState('');
+    const [entryDateTo, setEntryDateTo] = useState('');
     const [sideFilter, setSideFilter] = useState('ALL');
     const [opsLimit, setOpsLimit] = useState(null);
     const [planStatus, setPlanStatus] = useState(null);
+
+    const isInvalidDateRange = Boolean(entryDateFrom && entryDateTo && entryDateFrom > entryDateTo);
 
     useEffect(() => {
       fetch('/api/trading/plan-check')
@@ -90,11 +94,21 @@ export default function TradingDashboard() {
 
     useEffect(() => {
       if (!activeAccount) return;
-      fetch(`/api/trading/analysis?accountId=${activeAccount.id}&filterType=${analysisFilter}&filterValue=${analysisFilterValue}`)
+      if (isInvalidDateRange) return;
+
+      const p = new URLSearchParams({
+        accountId: String(activeAccount.id),
+        filterType: analysisFilter,
+        filterValue: analysisFilterValue
+      });
+      if (entryDateFrom) p.set('dateFrom', entryDateFrom);
+      if (entryDateTo) p.set('dateTo', entryDateTo);
+
+      fetch(`/api/trading/analysis?${p.toString()}`)
         .then(r => r.json())
         .then(data => setAnalysis(data))
         .catch(() => {});
-    }, [activeAccount, analysisFilter, analysisFilterValue]);
+    }, [activeAccount, analysisFilter, analysisFilterValue, entryDateFrom, entryDateTo, isInvalidDateRange]);
 
     useEffect(() => {
       fetch('/api/auth/me')
@@ -132,12 +146,14 @@ export default function TradingDashboard() {
       const p = new URLSearchParams({ accountId: String(activeAccount.id) });
       p.set('setupId', setupModal.setupId ? String(setupModal.setupId) : 'none');
       if (setupModal.side) p.set('side', setupModal.side);
+      if (entryDateFrom) p.set('dateFrom', entryDateFrom);
+      if (entryDateTo) p.set('dateTo', entryDateTo);
       fetch(`/api/trading/operations?${p.toString()}`)
         .then(r => r.json())
         .then(d => setSetupModalOps(Array.isArray(d) ? d : []))
         .catch(() => setSetupModalOps([]))
         .finally(() => setSetupModalLoading(false));
-    }, [setupModal, activeAccount?.id]);
+    }, [setupModal, activeAccount?.id, entryDateFrom, entryDateTo]);
 
     useEffect(() => {
       const handleKeyDown = (e) => {
@@ -687,7 +703,7 @@ export default function TradingDashboard() {
                   <div style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>Análisis por Tipo de Entrada</div>
                   <div style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)', marginTop: '2px' }}>Clasificado por dirección y rendimiento</div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   {/* Filtro por dirección */}
                   {['ALL', 'LONG', 'SHORT'].map(s => (
                     <button key={s} onClick={() => setSideFilter(s)}
@@ -699,6 +715,62 @@ export default function TradingDashboard() {
                       {s === 'ALL' ? 'Todas' : s === 'LONG' ? '↑ Compra' : '↓ Venta'}
                     </button>
                   ))}
+
+                  {/* Filtro por rango de fechas (Desde - Hasta) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#0a1a0f', border: '0.5px solid #1a3a24', borderRadius: '8px', padding: '3px 8px' }}>
+                    <span style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)' }}>Desde</span>
+                    <input
+                      type="date"
+                      value={entryDateFrom}
+                      onChange={e => setEntryDateFrom(e.target.value)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9FE1CB',
+                        fontSize: '11px',
+                        outline: 'none',
+                        colorScheme: 'dark',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <span style={{ fontSize: '11px', color: 'rgba(159,225,203,0.5)' }}>Hasta</span>
+                    <input
+                      type="date"
+                      value={entryDateTo}
+                      onChange={e => setEntryDateTo(e.target.value)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9FE1CB',
+                        fontSize: '11px',
+                        outline: 'none',
+                        colorScheme: 'dark',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    {(entryDateFrom || entryDateTo) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEntryDateFrom('');
+                          setEntryDateTo('');
+                        }}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          border: '0.5px solid #1a3a24',
+                          background: 'transparent',
+                          color: '#E24B4A'
+                        }}
+                        title="Limpiar fechas"
+                      >
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
 
                   {/* Filtro por periodo */}
                   <select value={analysisFilter} onChange={e => { setAnalysisFilter(e.target.value); setAnalysisFilterValue('') }}
@@ -724,13 +796,15 @@ export default function TradingDashboard() {
                     </select>
                   )}
 
-                  {(sideFilter !== 'ALL' || analysisFilter !== 'all' || analysisFilterValue !== '') && (
+                  {(sideFilter !== 'ALL' || analysisFilter !== 'all' || analysisFilterValue !== '' || entryDateFrom || entryDateTo) && (
                     <button
                       type="button"
                       onClick={() => {
                         setSideFilter('ALL');
                         setAnalysisFilter('all');
                         setAnalysisFilterValue('');
+                        setEntryDateFrom('');
+                        setEntryDateTo('');
                       }}
                       style={{
                         padding: '5px 12px',
@@ -753,6 +827,23 @@ export default function TradingDashboard() {
                   )}
                 </div>
               </div>
+
+              {isInvalidDateRange && (
+                <div style={{
+                  background: 'rgba(226,75,74,0.1)',
+                  border: '0.5px solid #E24B4A',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  marginBottom: '14px',
+                  color: '#E24B4A',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  ⚠️ La fecha "Desde" no puede ser mayor que "Hasta".
+                </div>
+              )}
 
               {/* Resumen por dirección (Clickable Filters) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '16px' }}>
@@ -1076,6 +1167,8 @@ export default function TradingDashboard() {
                           else if (setupModal.name === 'Sin setup') p.set('setupId', 'none')
                           if (setupModal.name && setupModal.name !== 'Sin setup') p.set('setup', setupModal.name)
                           if (setupModal.side) p.set('side', setupModal.side)
+                          if (entryDateFrom) p.set('dateFrom', entryDateFrom)
+                          if (entryDateTo) p.set('dateTo', entryDateTo)
                           setSetupModal(null)
                           router.push(`/trading/operations?${p.toString()}`)
                         }}
