@@ -64,6 +64,9 @@ export default function TradingDashboard() {
     const [dateTo, setDateTo] = useState('');
     const [showSetupModal, setShowSetupModal] = useState(false);
     const [setupFilter, setSetupFilter] = useState(null); // { name, id }
+    const [setupModal, setSetupModal] = useState(null); // { name, setupId, side }
+    const [setupModalOps, setSetupModalOps] = useState([]);
+    const [setupModalLoading, setSetupModalLoading] = useState(false);
     const [analysis, setAnalysis] = useState(null);
     const [analysisFilter, setAnalysisFilter] = useState('all');
     const [analysisFilterValue, setAnalysisFilterValue] = useState('');
@@ -122,6 +125,29 @@ export default function TradingDashboard() {
                 setLoading(false);
             });
     }, [activeAccount, isLoaded, range]);
+
+    useEffect(() => {
+      if (!setupModal || !activeAccount?.id) return;
+      setSetupModalLoading(true);
+      const p = new URLSearchParams({ accountId: String(activeAccount.id) });
+      p.set('setupId', setupModal.setupId ? String(setupModal.setupId) : 'none');
+      if (setupModal.side) p.set('side', setupModal.side);
+      fetch(`/api/trading/operations?${p.toString()}`)
+        .then(r => r.json())
+        .then(d => setSetupModalOps(Array.isArray(d) ? d : []))
+        .catch(() => setSetupModalOps([]))
+        .finally(() => setSetupModalLoading(false));
+    }, [setupModal, activeAccount?.id]);
+
+    useEffect(() => {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setSetupModal(null);
+      };
+      if (setupModal) {
+        window.addEventListener('keydown', handleKeyDown);
+      }
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [setupModal]);
 
     // Helper functions for Win Rate bar
     const winRate = metrics?.winRate || 0;
@@ -837,10 +863,7 @@ export default function TradingDashboard() {
                         return (
                           <tr key={i}
                             onDoubleClick={() => {
-                              setSetupFilter({ name: s.setup_name, setupId: s.setup_id })
-                              if (s.setup_name) {
-                                router.push(`/trading/operations?setup=${encodeURIComponent(s.setup_name)}`)
-                              }
+                              setSetupModal({ name: s.setup_name || 'Sin setup', setupId: s.setup_id, side: s.side });
                             }}
                             style={{
                               background: '#0a1a0f',
@@ -850,7 +873,7 @@ export default function TradingDashboard() {
                             }}
                             onMouseEnter={e => e.currentTarget.style.background = '#0f2a1a'}
                             onMouseLeave={e => e.currentTarget.style.background = '#0a1a0f'}
-                            title="Doble clic para ver operaciones de este setup"
+                            title="Doble clic para ver las entradas de este setup"
                           >
                             <td style={{
                               padding: '8px 8px',
@@ -984,6 +1007,198 @@ export default function TradingDashboard() {
             {/* GLOBAL MODALS */}
             {showSetupModal && (
                 <SetupManagerModal onClose={() => setShowSetupModal(false)} />
+            )}
+
+            {/* MODAL DETALLE DE ENTRADAS POR SETUP */}
+            {setupModal && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 2000,
+                  background: 'rgba(0, 0, 0, 0.75)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                  backdropFilter: 'blur(4px)'
+                }}
+                onClick={() => setSetupModal(null)}
+              >
+                <div
+                  style={{
+                    background: '#0d1f14',
+                    border: '1px solid #1a3a24',
+                    borderRadius: '12px',
+                    width: '100%',
+                    maxWidth: '750px',
+                    maxHeight: '85vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                    overflow: 'hidden'
+                  }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {/* Encabezado */}
+                  <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #1a3a24',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: '#0a1a0f'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
+                        {setupModal.name}
+                      </h3>
+                      {setupModal.side && (
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          background: setupModal.side === 'LONG' ? 'rgba(29,158,117,0.15)' : 'rgba(226,75,74,0.15)',
+                          border: `0.5px solid ${setupModal.side === 'LONG' ? '#1D9E75' : '#E24B4A'}`,
+                          color: setupModal.side === 'LONG' ? '#1D9E75' : '#E24B4A'
+                        }}>
+                          {setupModal.side === 'LONG' ? '↑ Compra' : '↓ Venta'}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSetupModal(null)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'rgba(159,225,203,0.6)',
+                        cursor: 'pointer',
+                        fontSize: '20px',
+                        lineHeight: 1,
+                        padding: '4px'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Resumen */}
+                  {(() => {
+                    const totalOps = setupModalOps.length;
+                    const totalWins = setupModalOps.filter(o => (o.result_type || o.resultType) === 'GANADA' || parseFloat(o.pnl) > 0).length;
+                    const totalLosses = setupModalOps.filter(o => (o.result_type || o.resultType) === 'PERDIDA' || parseFloat(o.pnl) < 0).length;
+                    const totalBe = setupModalOps.filter(o => (o.result_type || o.resultType) === 'BREAK_EVEN' || parseFloat(o.pnl) === 0).length;
+                    const totalPnl = setupModalOps.reduce((sum, o) => sum + (parseFloat(o.pnl) || 0), 0);
+                    const formattedTotalPnl = totalPnl >= 0 ? `+$${totalPnl.toFixed(2)}` : `-$${Math.abs(totalPnl).toFixed(2)}`;
+
+                    return (
+                      <div style={{
+                        padding: '12px 20px',
+                        background: '#09150d',
+                        borderBottom: '1px solid #1a3a24',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                        gap: '10px'
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)', letterSpacing: '0.5px' }}>ENTRADAS</div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#fff', marginTop: '2px' }}>{totalOps}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)', letterSpacing: '0.5px' }}>GANADAS</div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#1D9E75', marginTop: '2px' }}>{totalWins}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)', letterSpacing: '0.5px' }}>PERDIDAS</div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#E24B4A', marginTop: '2px' }}>{totalLosses}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)', letterSpacing: '0.5px' }}>BREAK EVEN</div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#F59E0B', marginTop: '2px' }}>{totalBe}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(159,225,203,0.5)', letterSpacing: '0.5px' }}>PNL TOTAL</div>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: totalPnl >= 0 ? '#1D9E75' : '#E24B4A', marginTop: '2px' }}>{formattedTotalPnl}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Tabla con scroll interno */}
+                  <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '12px 20px' }}>
+                    {setupModalLoading ? (
+                      <div style={{ textAlign: 'center', padding: '30px', color: 'rgba(159,225,203,0.6)', fontSize: '13px' }}>
+                        Cargando entradas...
+                      </div>
+                    ) : setupModalOps.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '30px', color: 'rgba(159,225,203,0.4)', fontSize: '13px' }}>
+                        No hay entradas registradas para este setup.
+                      </div>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #1a3a24', color: 'rgba(159,225,203,0.5)', fontSize: '10px', letterSpacing: '0.5px' }}>
+                            <th style={{ padding: '8px 10px', textAlign: 'left' }}>FECHA</th>
+                            <th style={{ padding: '8px 10px', textAlign: 'center' }}>DIRECCIÓN</th>
+                            <th style={{ padding: '8px 10px', textAlign: 'center' }}>RESULTADO</th>
+                            <th style={{ padding: '8px 10px', textAlign: 'right' }}>PNL</th>
+                            <th style={{ padding: '8px 10px', textAlign: 'right' }}>R</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {setupModalOps.map(op => {
+                            const pnl = parseFloat(op.pnl || 0);
+                            const pnlFormatted = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
+                            const resType = op.result_type || op.resultType || '-';
+                            const resColor = resType === 'GANADA' ? '#1D9E75' : resType === 'PERDIDA' ? '#E24B4A' : resType === 'BREAK_EVEN' ? '#F59E0B' : 'rgba(159,225,203,0.7)';
+                            const isLong = op.side === 'LONG';
+                            const rVal = op.result_r !== undefined && op.result_r !== null ? op.result_r : op.resultR;
+                            const rFormatted = rVal !== undefined && rVal !== null ? `${parseFloat(rVal) > 0 ? '+' : ''}${parseFloat(rVal).toFixed(2)}R` : '-';
+
+                            return (
+                              <tr key={op.id} style={{ borderBottom: '0.5px solid #1a3a24' }}>
+                                <td style={{ padding: '8px 10px', color: '#fff', fontFamily: 'monospace' }}>
+                                  {op.date}
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '500',
+                                    color: isLong ? '#1D9E75' : '#E24B4A'
+                                  }}>
+                                    {isLong ? '↑ Compra' : '↓ Venta'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: `${resColor}20`,
+                                    color: resColor,
+                                    border: `0.5px solid ${resColor}50`
+                                  }}>
+                                    {resType}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: pnl >= 0 ? '#1D9E75' : '#E24B4A' }}>
+                                  {pnlFormatted}
+                                </td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', color: 'rgba(159,225,203,0.8)', fontFamily: 'monospace' }}>
+                                  {rFormatted}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
         </div>
     );
