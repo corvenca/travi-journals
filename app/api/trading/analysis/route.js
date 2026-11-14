@@ -41,6 +41,7 @@ export async function GET(request) {
     // Análisis por setup con dirección
     const setupRes = await pool.query(`
       SELECT
+        o.setup_id,
         s.name as setup_name,
         s.direction as setup_direction,
         s.color as setup_color,
@@ -53,7 +54,7 @@ export async function GET(request) {
       FROM trading_operations o
       LEFT JOIN trading_setups s ON o.setup_id = s.id
       WHERE o.user_id = $1 AND o.account_id = $2 ${dateFilter}
-      GROUP BY s.name, s.direction, s.color, o.side
+      GROUP BY o.setup_id, s.name, s.direction, s.color, o.side
       ORDER BY total DESC
     `, [user.userId, accountId])
 
