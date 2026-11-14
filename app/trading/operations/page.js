@@ -185,6 +185,20 @@ export default function TradingOperationsLog() {
         }
     };
 
+    const fetchSetups = async () => {
+        try {
+            const accountId = activeAccount?.id;
+            const res = await fetch(`/api/trading/setups${accountId ? `?accountId=${accountId}` : ''}`);
+            if (res.ok) {
+                const data = await res.json();
+                setSetups(data);
+            }
+        } catch (err) {
+            console.error(err);
+            setSetups([]);
+        }
+    };
+
     useEffect(() => {
         if (!isLoaded) return;
         if (!activeAccount) {
