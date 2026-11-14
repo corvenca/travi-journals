@@ -1067,21 +1067,51 @@ export default function TradingDashboard() {
                         </span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setSetupModal(null)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'rgba(159,225,203,0.6)',
-                        cursor: 'pointer',
-                        fontSize: '20px',
-                        lineHeight: 1,
-                        padding: '4px'
-                      }}
-                    >
-                      ✕
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = new URLSearchParams()
+                          if (setupModal.setupId) p.set('setupId', String(setupModal.setupId))
+                          else if (setupModal.name === 'Sin setup') p.set('setupId', 'none')
+                          if (setupModal.name && setupModal.name !== 'Sin setup') p.set('setup', setupModal.name)
+                          if (setupModal.side) p.set('side', setupModal.side)
+                          setSetupModal(null)
+                          router.push(`/trading/operations?${p.toString()}`)
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: '0.5px solid #1D9E75',
+                          borderRadius: '8px',
+                          color: '#1D9E75',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Ver en Operaciones →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSetupModal(null)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'rgba(159,225,203,0.6)',
+                          cursor: 'pointer',
+                          fontSize: '20px',
+                          lineHeight: 1,
+                          padding: '4px'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
 
                   {/* Resumen */}

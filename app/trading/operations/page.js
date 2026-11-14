@@ -105,6 +105,14 @@ export default function TradingOperationsLog() {
             if (setupParam) {
                 setSetupNameFilter(decodeURIComponent(setupParam));
             }
+            const setupIdParam = urlParams.get('setupId');
+            if (setupIdParam) {
+                setFilterSetupId(setupIdParam);
+            }
+            const sideParam = urlParams.get('side');
+            if (sideParam && (sideParam === 'LONG' || sideParam === 'SHORT')) {
+                setFilterSide(sideParam);
+            }
         }
     }, []);
 
@@ -585,8 +593,9 @@ export default function TradingOperationsLog() {
                   🎯 Filtrando por setup: <strong>{setupNameFilter}</strong>
                 </span>
                 <button onClick={() => {
-                  setSetupNameFilter('')
-                  window.history.replaceState({}, '', '/trading/operations')
+                  setSetupNameFilter('');
+                  setFilterSetupId('');
+                  window.history.replaceState({}, '', '/trading/operations');
                 }}
                   style={{ background: 'transparent', border: 'none', color: '#E24B4A', fontSize: '18px', cursor: 'pointer', lineHeight: 1 }}>
                   ×
